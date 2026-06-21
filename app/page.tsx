@@ -65,7 +65,18 @@ export default async function Home() {
           id="home"
           className="court-glow stringbed relative overflow-hidden"
         >
-          <div className="mx-auto max-w-5xl px-4 pb-20 pt-16 sm:px-6 sm:pb-28 sm:pt-24">
+          {/* Blurred photo of the stringing machine as a tasteful backdrop */}
+          <div className="pointer-events-none absolute inset-0" aria-hidden>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/hero-machine.jpg"
+              alt=""
+              className="h-full w-full scale-110 object-cover opacity-100 blur-2xl"
+            />
+            <div className="absolute inset-0 bg-cream/70" />
+            <div className="absolute inset-0 bg-gradient-to-b from-cream/30 via-transparent to-cream" />
+          </div>
+          <div className="relative z-10 mx-auto max-w-5xl px-4 pb-20 pt-16 sm:px-6 sm:pb-28 sm:pt-24">
             <Reveal>
               <p className="text-sm font-medium tracking-wide text-court">
                 Mobile racquet stringing · East Bay
