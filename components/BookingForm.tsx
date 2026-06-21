@@ -118,6 +118,13 @@ export default function BookingForm() {
   const sectionHeading = "font-display text-base font-semibold text-ink";
   const card = "rounded-2xl border border-line bg-paper p-5 shadow-sm sm:p-6";
 
+  const selectedHub = hubId && hubId !== NONE ? hubs.find((h) => h.id === hubId) ?? null : null;
+  const mapQuery = selectedHub
+    ? selectedHub.lat != null && selectedHub.lng != null
+      ? `${selectedHub.lat},${selectedHub.lng}`
+      : selectedHub.description || selectedHub.name
+    : null;
+
   return (
     <form onSubmit={submit} className="space-y-5">
       {/* Your info */}
@@ -210,12 +217,33 @@ export default function BookingForm() {
 
         <div className="mt-4 space-y-2">
           <span className={label}>Meetup spot (closest to you)</span>
-          <div className="space-y-2">
-            {hubs.map((h) => (
+          <div className="grid gap-4 lg:grid-cols-[1fr_17rem]">
+            <div className="space-y-2">
+              {hubs.map((h) => (
+                <label
+                  key={h.id}
+                  className={`flex cursor-pointer items-start gap-2.5 rounded-lg border p-3 text-sm transition ${
+                    hubId === h.id
+                      ? "border-court bg-court-tint"
+                      : "border-line bg-paper hover:border-court/40"
+                  }`}
+                >
+                  <input
+                    type="radio"
+                    name="hub"
+                    className="mt-0.5 accent-court"
+                    checked={hubId === h.id}
+                    onChange={() => setHubId(h.id)}
+                  />
+                  <span>
+                    <span className="font-medium text-ink">{h.name}</span>
+                    {h.description ? <span className="block text-stone">{h.description}</span> : null}
+                  </span>
+                </label>
+              ))}
               <label
-                key={h.id}
-                className={`flex cursor-pointer items-start gap-2.5 rounded-lg border p-3 text-sm transition ${
-                  hubId === h.id
+                className={`flex cursor-pointer items-center gap-2.5 rounded-lg border p-3 text-sm transition ${
+                  hubId === NONE
                     ? "border-court bg-court-tint"
                     : "border-line bg-paper hover:border-court/40"
                 }`}
@@ -223,32 +251,33 @@ export default function BookingForm() {
                 <input
                   type="radio"
                   name="hub"
-                  className="mt-0.5 accent-court"
-                  checked={hubId === h.id}
-                  onChange={() => setHubId(h.id)}
+                  className="accent-court"
+                  checked={hubId === NONE}
+                  onChange={() => setHubId(NONE)}
                 />
-                <span>
-                  <span className="font-medium text-ink">{h.name}</span>
-                  {h.description ? <span className="block text-stone">{h.description}</span> : null}
-                </span>
+                <span className="text-ink">None of these are near me</span>
               </label>
-            ))}
-            <label
-              className={`flex cursor-pointer items-center gap-2.5 rounded-lg border p-3 text-sm transition ${
-                hubId === NONE
-                  ? "border-court bg-court-tint"
-                  : "border-line bg-paper hover:border-court/40"
-              }`}
-            >
-              <input
-                type="radio"
-                name="hub"
-                className="accent-court"
-                checked={hubId === NONE}
-                onChange={() => setHubId(NONE)}
-              />
-              <span className="text-ink">None of these are near me</span>
-            </label>
+            </div>
+
+            {/* Map of the selected meetup spot */}
+            <div className="min-h-44 overflow-hidden rounded-lg border border-line bg-sand/40">
+              {selectedHub && mapQuery ? (
+                <iframe
+                  key={mapQuery}
+                  title={`Map of ${selectedHub.name}`}
+                  src={`https://maps.google.com/maps?q=${encodeURIComponent(mapQuery)}&z=15&output=embed`}
+                  loading="lazy"
+                  referrerPolicy="no-referrer-when-downgrade"
+                  className="h-full min-h-44 w-full border-0"
+                />
+              ) : (
+                <div className="flex h-full min-h-44 items-center justify-center p-4 text-center text-xs text-stone">
+                  {hubId === NONE
+                    ? "No problem — I'll reach out to arrange a spot."
+                    : "Select a meetup spot to see it on the map."}
+                </div>
+              )}
+            </div>
           </div>
         </div>
 

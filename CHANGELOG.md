@@ -5,7 +5,7 @@
 ### Added
 - Add `color` column to `string_catalog` (`scripts/schema.sql`, `StringItem` type, mapper, and catalog/booking/inventory UI).
 - Seed the string catalog with 13 polyester strings.
-- Rebrand to **East Bay Stringing** with a warm-minimal theme (court-green + optic accents, Space Grotesk / Inter) in `app/globals.css`.
+- Rebrand to **East Bay Stringing** with a warm-minimal theme (court-green + optic accents, Plus Jakarta Sans / Inter) in `app/globals.css`.
 - Add single-page public home (`app/page.tsx`): hero + how-it-works, why strip, pricing, strings — with sticky scrollspy tabs and smooth-scroll.
 - Add site components: `components/site/{StickyTabs,Reveal,SiteHeader,SiteFooter}.tsx` (CSS + IntersectionObserver motion, `prefers-reduced-motion` gated).
 - Add dedicated `app/racquets/page.tsx` for racquets-for-sale.
