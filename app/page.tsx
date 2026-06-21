@@ -241,10 +241,20 @@ export default async function Home() {
         </section>
 
         {/* -------------------------------------------------------- STRINGS */}
-        <section className="bg-sand/50">
+        <section className="relative overflow-hidden bg-sand/50">
+          {/* Blurred on-court photo backdrop */}
+          <div className="pointer-events-none absolute inset-0" aria-hidden>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/strings-bg.jpg"
+              alt=""
+              className="h-full w-full scale-105 object-cover opacity-100 blur-[2px]"
+            />
+            <div className="absolute inset-0 bg-gradient-to-b from-cream via-cream/55 to-cream" />
+          </div>
           <div
             id="strings"
-            className="mx-auto max-w-5xl px-4 py-20 sm:px-6 sm:py-24"
+            className="relative z-10 mx-auto max-w-5xl px-4 py-20 sm:px-6 sm:py-24"
           >
             <Reveal>
               <h2 className="font-display text-3xl font-semibold tracking-tight text-ink">
