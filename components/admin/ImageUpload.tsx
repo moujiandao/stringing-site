@@ -98,43 +98,57 @@ export default function ImageUpload({
 
   return (
     <div className="shrink-0">
-      <button
-        type="button"
+      {/* A div (not a button) is a far more reliable drop target across browsers. */}
+      <div
+        role="button"
+        tabIndex={0}
         onClick={() => inputRef.current?.click()}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") inputRef.current?.click();
+        }}
+        onDragEnter={(e) => {
+          e.preventDefault();
+          setDrag(true);
+        }}
         onDragOver={(e) => {
           e.preventDefault();
+          e.dataTransfer.dropEffect = "copy";
           setDrag(true);
         }}
         onDragLeave={() => setDrag(false)}
         onDrop={(e) => {
           e.preventDefault();
+          e.stopPropagation();
           setDrag(false);
           const dt = e.dataTransfer;
+          // 1) a real file (Finder, or browsers that expose the image as a file)
           const file = dt.files?.[0];
-          if (file && file.type.startsWith("image/")) {
-            handleFile(file);
-            return;
-          }
-          // Dragged from another browser: read the image URL instead of a file.
-          const uri = (dt.getData("text/uri-list") || dt.getData("text/plain")).trim();
+          if (file && file.type.startsWith("image/")) return void handleFile(file);
+          // 2) items API — some browsers surface the dragged image here
+          const itemFile = Array.from(dt.items || [])
+            .find((it) => it.kind === "file")
+            ?.getAsFile();
+          if (itemFile && itemFile.type.startsWith("image/")) return void handleFile(itemFile);
+          // 3) a URL dragged from another browser/tab
+          const uri = (dt.getData("text/uri-list") || dt.getData("text/plain") || "").trim();
           const url = uri || imgSrcFromHtml(dt.getData("text/html"));
-          if (url) handleUrl(url);
-          else setErr("Couldn't read that — try saving the image and picking the file.");
+          if (url) return void handleUrl(url);
+          setErr("Couldn't read that. Save the image, then click to pick it.");
         }}
-        className={`relative flex h-16 w-16 items-center justify-center overflow-hidden rounded-lg border bg-paper text-[10px] text-stone transition ${
+        className={`relative flex h-16 w-16 cursor-pointer items-center justify-center overflow-hidden rounded-lg border bg-paper text-[10px] text-stone transition ${
           drag ? "border-court ring-2 ring-court/30" : "border-line hover:border-court/40"
         }`}
-        title="Upload or drag an image"
+        title="Click to pick, or drag an image here (from Finder or another browser)"
       >
         {busy ? (
           <span>…</span>
         ) : url ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={url} alt="" className="h-full w-full object-contain" />
+          <img src={url} alt="" className="pointer-events-none h-full w-full object-contain" />
         ) : (
-          <span className="px-1 text-center leading-tight">Drop / pick image</span>
+          <span className="pointer-events-none px-1 text-center leading-tight">Drop / pick image</span>
         )}
-      </button>
+      </div>
       <input
         ref={inputRef}
         type="file"

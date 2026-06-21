@@ -38,13 +38,23 @@ export async function POST(req: NextRequest) {
       id = body.id || "";
       const sourceUrl = body.sourceUrl || "";
       if (!sourceUrl) return NextResponse.json({ error: "Missing image URL" }, { status: 400 });
+      let referer = "";
+      try {
+        referer = new URL(sourceUrl).origin;
+      } catch {}
       const r = await fetch(sourceUrl, {
-        headers: { "User-Agent": "Mozilla/5.0", Accept: "image/*" },
+        headers: {
+          "User-Agent":
+            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124 Safari/537.36",
+          Accept: "image/avif,image/webp,image/apng,image/*,*/*;q=0.8",
+          ...(referer ? { Referer: referer } : {}),
+        },
+        redirect: "follow",
       });
-      if (!r.ok) return NextResponse.json({ error: "Could not fetch that image" }, { status: 400 });
-      if (!(r.headers.get("content-type") || "").startsWith("image/")) {
-        return NextResponse.json({ error: "That link isn't an image" }, { status: 400 });
+      if (!r.ok) {
+        return NextResponse.json({ error: `Could not fetch image (${r.status})` }, { status: 400 });
       }
+      // Let sharp validate the bytes rather than trusting the content-type header.
       buf = await squareJpeg(Buffer.from(await r.arrayBuffer()));
     } else {
       const form = await req.formData();
