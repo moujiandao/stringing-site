@@ -41,7 +41,12 @@ const WHY = [
   {
     emoji: "🎾",
     title: "Wholesale strings, discounted",
-    body: "I buy reels wholesale, so full-service string costs you less.",
+    body: "I buy reels wholesale, so the string you pick costs you less.",
+  },
+  {
+    emoji: "🎯",
+    title: "Pro electronic stringing",
+    body: "Constant-pull electronic machine, tension accurate to ±0.5 lb — strung to USRSA best practices.",
   },
 ];
 
@@ -149,7 +154,7 @@ export default async function Home() {
         {/* ----------------------------------------------------- WHY STRIP */}
         <section className="border-y border-line bg-court-tint/60">
           <div className="mx-auto max-w-5xl px-4 py-12 sm:px-6 sm:py-14">
-            <div className="grid gap-6 sm:grid-cols-3">
+            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
               {WHY.map((item, i) => (
                 <Reveal key={item.title} delay={i * 90}>
                   <div className="flex items-start gap-3">
