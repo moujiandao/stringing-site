@@ -44,6 +44,7 @@ create table if not exists public.string_catalog (
   name        text not null,
   brand       text,
   gauge       text,
+  color       text,
   price_cents int not null default 0,
   in_stock    boolean not null default true,
   sort_order  int not null default 0,
@@ -51,6 +52,8 @@ create table if not exists public.string_catalog (
   created_at  timestamptz not null default now(),
   updated_at  timestamptz not null default now()
 );
+-- Additive migration for existing databases (safe to re-run).
+alter table public.string_catalog add column if not exists color text;
 alter table public.string_catalog enable row level security;
 drop policy if exists strings_public_read on public.string_catalog;
 create policy strings_public_read on public.string_catalog

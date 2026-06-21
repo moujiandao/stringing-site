@@ -62,6 +62,7 @@ export interface StringItem {
   name: string;
   brand: string | null;
   gauge: string | null;
+  color: string | null;
   priceCents: number;
   inStock: boolean;
   sortOrder: number;

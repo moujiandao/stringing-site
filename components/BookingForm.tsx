@@ -168,7 +168,8 @@ export default function BookingForm() {
             <option value="">Select a string…</option>
             {strings.map((s) => (
               <option key={s.id} value={s.id}>
-                {s.name} {s.gauge ? `(${s.gauge})` : ""} — {formatCents(s.priceCents)}
+                {s.name}
+                {s.color ? `, ${s.color}` : ""} {s.gauge ? `(${s.gauge})` : ""} — {formatCents(s.priceCents)}
               </option>
             ))}
           </select>

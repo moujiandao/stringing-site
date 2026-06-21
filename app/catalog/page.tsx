@@ -38,7 +38,7 @@ export default async function CatalogPage() {
                 <div>
                   <p className="font-medium">{s.name}</p>
                   <p className="text-sm text-zinc-500">
-                    {[s.brand, s.gauge].filter(Boolean).join(" · ") || "—"}
+                    {[s.brand, s.gauge, s.color].filter(Boolean).join(" · ") || "—"}
                   </p>
                 </div>
                 <span className="font-semibold">{formatCents(s.priceCents)}</span>

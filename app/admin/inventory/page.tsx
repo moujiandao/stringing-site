@@ -42,6 +42,7 @@ function StringsSection({ items, reload }: { items: StringItem[]; reload: () => 
   const [name, setName] = useState("");
   const [brand, setBrand] = useState("");
   const [gauge, setGauge] = useState("");
+  const [color, setColor] = useState("");
   const [price, setPrice] = useState("");
 
   async function add() {
@@ -50,11 +51,13 @@ function StringsSection({ items, reload }: { items: StringItem[]; reload: () => 
       name: name.trim(),
       brand: brand.trim() || null,
       gauge: gauge.trim() || null,
+      color: color.trim() || null,
       price_cents: Math.round(Number(price || 0) * 100),
     });
     setName("");
     setBrand("");
     setGauge("");
+    setColor("");
     setPrice("");
     reload();
   }
@@ -67,6 +70,7 @@ function StringsSection({ items, reload }: { items: StringItem[]; reload: () => 
         name: next.name,
         brand: next.brand,
         gauge: next.gauge,
+        color: next.color,
         price_cents: next.priceCents,
         in_stock: next.inStock,
       })
@@ -86,6 +90,7 @@ function StringsSection({ items, reload }: { items: StringItem[]; reload: () => 
         <input className={field} placeholder="Name" value={name} onChange={(e) => setName(e.target.value)} />
         <input className={field} placeholder="Brand" value={brand} onChange={(e) => setBrand(e.target.value)} />
         <input className={field} placeholder="Gauge" value={gauge} onChange={(e) => setGauge(e.target.value)} />
+        <input className={field} placeholder="Color" value={color} onChange={(e) => setColor(e.target.value)} />
         <input className={field} placeholder="Price $" value={price} onChange={(e) => setPrice(e.target.value)} />
         <button onClick={add} className="rounded-md bg-zinc-900 px-3 py-1 text-sm text-white hover:bg-zinc-700">
           Add
@@ -110,6 +115,12 @@ function StringsSection({ items, reload }: { items: StringItem[]; reload: () => 
               defaultValue={s.gauge ?? ""}
               onBlur={(e) => save(s, { gauge: e.target.value || null })}
               placeholder="Gauge"
+            />
+            <input
+              className={`${field} w-24`}
+              defaultValue={s.color ?? ""}
+              onBlur={(e) => save(s, { color: e.target.value || null })}
+              placeholder="Color"
             />
             <input
               className={`${field} w-20`}
