@@ -65,6 +65,7 @@ export interface StringItem {
   brand: string | null;
   gauge: string | null;
   color: string | null;
+  photoUrl: string | null;
   priceCents: number;
   inStock: boolean;
   sortOrder: number;

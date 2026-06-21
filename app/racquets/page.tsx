@@ -47,10 +47,10 @@ export default async function RacquetsPage() {
                   <img
                     src={r.photoUrl}
                     alt={r.name}
-                    className="aspect-[4/3] w-full object-cover"
+                    className="aspect-square w-full border-b border-line object-contain"
                   />
                 ) : (
-                  <div className="flex aspect-[4/3] w-full items-center justify-center bg-sand">
+                  <div className="flex aspect-square w-full items-center justify-center bg-sand">
                     <span className="font-display text-sm text-stone">No photo</span>
                   </div>
                 )}

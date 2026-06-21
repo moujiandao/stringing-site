@@ -36,6 +36,7 @@ export function rowToString(r: any): StringItem {
     brand: r.brand ?? null,
     gauge: r.gauge ?? null,
     color: r.color ?? null,
+    photoUrl: r.photo_url ?? null,
     priceCents: r.price_cents ?? 0,
     inStock: r.in_stock,
     sortOrder: r.sort_order ?? 0,

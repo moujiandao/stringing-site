@@ -10,6 +10,9 @@
 - Add site components: `components/site/{StickyTabs,Reveal,SiteHeader,SiteFooter}.tsx` (CSS + IntersectionObserver motion, `prefers-reduced-motion` gated).
 - Add dedicated `app/racquets/page.tsx` for racquets-for-sale.
 - Show a live map of the selected meetup hub in the booking form (keyless Google Maps embed, keyed by lat/lng or address).
+- Admin image upload (drag or click) for strings and racquets — client-side resize to a uniform 600×600 square, stored in a public `catalog` Storage bucket via an owner-authed `/api/admin/upload` route. String photos now show on the home grid; string/racquet images render as uniform squares.
+- Add `photo_url` to `string_catalog` (`scripts/schema.sql`); racquets already had one.
+- Make the pricing cards clickable — each jumps to the booking form with its service preselected (`/?service=…#book`).
 
 ### Changed
 - Break string color out of the folded-in name into the dedicated `color` field; catalog shows `brand · gauge · color`.

@@ -178,8 +178,9 @@ export default async function Home() {
               const popular = t === "full_service";
               return (
                 <Reveal key={t} delay={i * 90} className="h-full">
-                  <div
-                    className={`relative flex h-full flex-col rounded-2xl border bg-paper p-6 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-md ${
+                  <Link
+                    href={`/?service=${t}#book`}
+                    className={`group relative flex h-full flex-col rounded-2xl border bg-paper p-6 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-md ${
                       popular ? "border-court" : "border-line"
                     }`}
                   >
@@ -200,7 +201,11 @@ export default async function Home() {
                     <p className="mt-4 text-sm leading-relaxed text-stone">
                       {s.blurb}
                     </p>
-                  </div>
+                    <span className="mt-5 inline-flex items-center gap-1 text-sm font-medium text-court">
+                      Book this
+                      <span className="transition-transform group-hover:translate-x-0.5">→</span>
+                    </span>
+                  </Link>
                 </Reveal>
               );
             })}
@@ -250,6 +255,14 @@ export default async function Home() {
                   return (
                     <Reveal key={s.id} delay={(i % 3) * 80} className="h-full">
                       <div className="flex h-full flex-col rounded-2xl border border-line bg-paper p-5 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-md">
+                        {s.photoUrl && (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img
+                            src={s.photoUrl}
+                            alt={s.name}
+                            className="mb-3 aspect-square w-full rounded-lg border border-line object-contain"
+                          />
+                        )}
                         <h3 className="font-display text-base font-semibold text-ink">
                           {s.name}
                         </h3>

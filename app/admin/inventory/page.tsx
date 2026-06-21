@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { rowToString, rowToRacquet } from "@/lib/mappers";
 import type { StringItem, RacquetForSale } from "@/lib/types";
+import ImageUpload from "@/components/admin/ImageUpload";
 
 // Lazy: only create the browser client in the browser, never during SSR/prerender.
 let _sb: ReturnType<typeof createClient> | null = null;
@@ -71,6 +72,7 @@ function StringsSection({ items, reload }: { items: StringItem[]; reload: () => 
         brand: next.brand,
         gauge: next.gauge,
         color: next.color,
+        photo_url: next.photoUrl,
         price_cents: next.priceCents,
         in_stock: next.inStock,
       })
@@ -99,6 +101,12 @@ function StringsSection({ items, reload }: { items: StringItem[]; reload: () => 
       <div className="divide-y divide-zinc-200 rounded-lg border border-zinc-200 bg-white">
         {items.map((s) => (
           <div key={s.id} className="flex flex-wrap items-center gap-2 px-3 py-2 text-sm">
+            <ImageUpload
+              folder="strings"
+              id={s.id}
+              url={s.photoUrl}
+              onUploaded={(u) => save(s, { photoUrl: u })}
+            />
             <input
               className={field}
               defaultValue={s.name}
@@ -208,6 +216,12 @@ function RacquetsSection({ items, reload }: { items: RacquetForSale[]; reload: (
       <div className="divide-y divide-zinc-200 rounded-lg border border-zinc-200 bg-white">
         {items.map((r) => (
           <div key={r.id} className="flex flex-wrap items-center gap-2 px-3 py-2 text-sm">
+            <ImageUpload
+              folder="racquets"
+              id={r.id}
+              url={r.photoUrl}
+              onUploaded={(u) => save(r, { photoUrl: u })}
+            />
             <input
               className={field}
               defaultValue={r.name}

@@ -30,6 +30,13 @@ export default function BookingForm() {
   const [token, setToken] = useState<string | null>(null);
 
   useEffect(() => {
+    // Preselect the service if arriving from a pricing card (/?service=...#book).
+    const svc = new URLSearchParams(window.location.search).get("service");
+    if (svc && (SERVICE_TYPES as readonly string[]).includes(svc)) {
+      // One-time init from the pricing-card link; not a reactive update.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setServiceType(svc as ServiceType);
+    }
     const supabase = createClient();
     (async () => {
       const [{ data: h }, { data: s }] = await Promise.all([
