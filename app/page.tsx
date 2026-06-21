@@ -71,10 +71,11 @@ export default async function Home() {
             <img
               src="/hero-machine.jpg"
               alt=""
-              className="h-full w-full scale-110 object-cover opacity-100 blur-2xl"
+              className="h-full w-full scale-105 object-cover opacity-100 blur-[2px]"
             />
-            <div className="absolute inset-0 bg-cream/70" />
-            <div className="absolute inset-0 bg-gradient-to-b from-cream/30 via-transparent to-cream" />
+            {/* Left-weighted veil keeps the headline legible; machine stays visible */}
+            <div className="absolute inset-0 bg-gradient-to-r from-cream via-cream/55 to-cream/20" />
+            <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-cream" />
           </div>
           <div className="relative z-10 mx-auto max-w-5xl px-4 pb-20 pt-16 sm:px-6 sm:pb-28 sm:pt-24">
             <Reveal>
