@@ -5,9 +5,17 @@
 ### Added
 - Add `color` column to `string_catalog` (`scripts/schema.sql`, `StringItem` type, mapper, and catalog/booking/inventory UI).
 - Seed the string catalog with 13 polyester strings.
+- Rebrand to **East Bay Stringing** with a warm-minimal theme (court-green + optic accents, Space Grotesk / Inter) in `app/globals.css`.
+- Add single-page public home (`app/page.tsx`): hero + how-it-works, why strip, pricing, strings — with sticky scrollspy tabs and smooth-scroll.
+- Add site components: `components/site/{StickyTabs,Reveal,SiteHeader,SiteFooter}.tsx` (CSS + IntersectionObserver motion, `prefers-reduced-motion` gated).
+- Add dedicated `app/racquets/page.tsx` for racquets-for-sale.
 
 ### Changed
 - Break string color out of the folded-in name into the dedicated `color` field; catalog shows `brand · gauge · color`.
+- Restyle the booking form into grouped themed cards (logic unchanged); re-theme the status page.
+
+### Removed
+- Remove the standalone `/catalog` and `/book` routes (merged into the single-page home + `/racquets`).
 
 ### Deployed
 - Deploy to Vercel production at `eastbaystringing.vercel.app` (GitHub repo `moujiandao/stringing-site`, 9 env vars set).

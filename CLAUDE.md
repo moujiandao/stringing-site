@@ -24,7 +24,8 @@ Replaces a verbose competitor site by cutting marketing filler and adding real l
 - `lib/supabase/{server,admin,client}.ts` — session-RLS / service-role / anon-browser clients.
 - `lib/batching/` — pure trip-grouping engine (`group.ts` typed facade over `core.mjs`), unit-tested.
 - `lib/email/{send,templates}.ts` — Resend wrapper + per-EmailKind templates.
-- `app/` (public): `/` home, `/catalog`, `/book`, `/status/[token]`.
+- `components/site/{StickyTabs,Reveal,SiteHeader,SiteFooter}.tsx` — public-site chrome + scroll-reveal/scrollspy (CSS + IntersectionObserver; theme tokens in `app/globals.css`).
+- `app/` (public): `/` single-page home (hero/how-it-works, why, pricing, strings — scrollspy tabs), `/racquets` (racquets for sale), `/status/[token]`.
 - `app/admin/` (owner, gated by `proxy.ts` — Next 16's renamed middleware): login, dashboard, bookings/[id], inventory, hubs, batches.
 - `app/api/`: `bookings` (submit), `bookings/[token]` (status), `admin/bookings/[id]/transition`,
   `admin/batches/[id]`, `cron/build-trip-batches`.
