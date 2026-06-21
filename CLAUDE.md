@@ -47,9 +47,11 @@ Replaces a verbose competitor site by cutting marketing filler and adding real l
   table: a booking is in at most one batch per phase, and the phases key off mutually-exclusive
   statuses (`confirmed`→dropoff, `ready`→pickup), so a booking can never double-batch. Rejected a
   generic join table because it would need extra constraints to prevent that bug.
-- **Coarse availability** (weekday × {morning, afternoon, evening}) rather than free-form times:
-  grouping needs discrete comparable slots to set-cover. The owner picks the exact clock time when
-  confirming a trip.
+- **Discrete availability slots** rather than free-form times: the booking form takes a set of
+  weekdays × a set of 1.5-hour meetup windows (12pm–8pm, defined in `DAY_PARTS`) and stores the
+  cross-product as `(weekday, day_part)` rows. Grouping needs discrete comparable slots to set-cover.
+  The `day_part` column/`DayPart` type holds the window id (e.g. `"1800"`); the batcher treats it as
+  an opaque slot, so changing the window set needs no schema or algorithm change.
 - **Greedy max-coverage set-cover** for trip grouping: near-minimal trips, trivial to reason about;
   exact set-cover is NP-hard and overkill at hobby scale.
 - **Straggler knobs** (`MIN_BATCH_SIZE`, `STRAGGLER_MAX_DAYS`): the lever balancing "minimize trips"

@@ -22,7 +22,9 @@ export type BookingStatus =
 // --- Availability (the grouping signal) --------------------------------
 // Coarse on purpose: grouping needs discrete, comparable slots to set-cover.
 export type Weekday = 0 | 1 | 2 | 3 | 4 | 5 | 6; // 0 = Sunday
-export type DayPart = "morning" | "afternoon" | "evening";
+// Bookable 1.5-hour meetup windows (owner meets 12pm–8pm). Stored in the
+// `day_part` column; the batcher treats these as opaque discrete slots.
+export type DayPart = "1200" | "1330" | "1500" | "1630" | "1800";
 
 export interface AvailabilityWindow {
   weekday: Weekday;

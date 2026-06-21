@@ -166,19 +166,15 @@ export default async function Home() {
               Simple, honest pricing
             </h2>
             <p className="mt-3 max-w-xl text-stone">
-              Flat labor, no markup games. Full service adds the string you pick;
-              regrip adds the grip cost — both paid in person.
+              Flat labor, no markup games. Pick-your-string adds the wholesale string
+              cost; regrip adds the grip cost — both paid in person.
             </p>
           </Reveal>
 
           <div className="mt-10 grid gap-5 sm:grid-cols-3">
             {SERVICE_TYPES.map((t, i) => {
               const s = SERVICES[t];
-              const sublabel = s.needsString
-                ? "+ string cost"
-                : s.needsGrip
-                  ? "+ grip cost"
-                  : "labor only";
+              const sublabel = s.priceNote;
               const popular = t === "full_service";
               return (
                 <Reveal key={t} delay={i * 90} className="h-full">

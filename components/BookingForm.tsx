@@ -22,7 +22,8 @@ export default function BookingForm() {
   const [racquetLabel, setRacquetLabel] = useState("");
   const [hubId, setHubId] = useState("");
   const [notes, setNotes] = useState("");
-  const [slots, setSlots] = useState<Set<string>>(new Set());
+  const [days, setDays] = useState<Set<Weekday>>(new Set());
+  const [times, setTimes] = useState<Set<DayPart>>(new Set());
 
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -40,13 +41,19 @@ export default function BookingForm() {
     })();
   }, []);
 
-  const slotKey = (w: Weekday, d: DayPart) => `${w}|${d}`;
-  function toggleSlot(w: Weekday, d: DayPart) {
-    const k = slotKey(w, d);
-    setSlots((prev) => {
+  function toggleDay(w: Weekday) {
+    setDays((prev) => {
       const next = new Set(prev);
-      if (next.has(k)) next.delete(k);
-      else next.add(k);
+      if (next.has(w)) next.delete(w);
+      else next.add(w);
+      return next;
+    });
+  }
+  function toggleTime(t: DayPart) {
+    setTimes((prev) => {
+      const next = new Set(prev);
+      if (next.has(t)) next.delete(t);
+      else next.add(t);
       return next;
     });
   }
@@ -58,13 +65,12 @@ export default function BookingForm() {
     if (!name.trim() || !email.trim()) return setError("Name and email are required.");
     if (serviceType === "full_service" && !stringId) return setError("Pick a string for full service.");
     if (!hubId) return setError("Pick a meetup spot (or 'none near me').");
-    if (slots.size === 0) return setError("Pick at least one availability window.");
+    if (days.size === 0 || times.size === 0)
+      return setError("Pick at least one day and one time window.");
 
     const outOfRange = hubId === NONE;
-    const availability: AvailabilityWindow[] = [...slots].map((k) => {
-      const [w, d] = k.split("|");
-      return { weekday: Number(w) as Weekday, dayPart: d as DayPart };
-    });
+    const availability: AvailabilityWindow[] = [];
+    for (const w of days) for (const t of times) availability.push({ weekday: w, dayPart: t });
 
     setSubmitting(true);
     try {
@@ -281,38 +287,53 @@ export default function BookingForm() {
           </div>
         </div>
 
-        <div className="mt-5 space-y-2">
-          <span className={label}>When are you free to meet?</span>
-          <div className="overflow-x-auto rounded-lg border border-line bg-sand/40 p-2">
-            <table className="text-sm">
-              <thead>
-                <tr>
-                  <th className="p-1.5" />
-                  {DAY_PARTS.map((d) => (
-                    <th key={d.value} className="p-1.5 font-medium text-stone">
-                      {d.label}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {WEEKDAYS.map((w) => (
-                  <tr key={w.value}>
-                    <td className="p-1.5 pr-3 font-medium text-stone">{w.short}</td>
-                    {DAY_PARTS.map((d) => (
-                      <td key={d.value} className="p-1.5 text-center">
-                        <input
-                          type="checkbox"
-                          className="h-4 w-4 accent-court"
-                          checked={slots.has(slotKey(w.value, d.value))}
-                          onChange={() => toggleSlot(w.value, d.value)}
-                        />
-                      </td>
-                    ))}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+        <div className="mt-5 space-y-4">
+          <div className="space-y-2">
+            <span className={label}>Which days work? (pick any)</span>
+            <div className="flex flex-wrap gap-2">
+              {WEEKDAYS.map((w) => {
+                const on = days.has(w.value);
+                return (
+                  <button
+                    type="button"
+                    key={w.value}
+                    onClick={() => toggleDay(w.value)}
+                    aria-pressed={on}
+                    className={`rounded-full border px-3.5 py-1.5 text-sm transition ${
+                      on
+                        ? "border-court bg-court text-white"
+                        : "border-line bg-paper text-ink hover:border-court/40"
+                    }`}
+                  >
+                    {w.short}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <span className={label}>Which times? (I meet 12–8pm — pick any)</span>
+            <div className="flex flex-wrap gap-2">
+              {DAY_PARTS.map((t) => {
+                const on = times.has(t.value);
+                return (
+                  <button
+                    type="button"
+                    key={t.value}
+                    onClick={() => toggleTime(t.value)}
+                    aria-pressed={on}
+                    className={`rounded-full border px-3.5 py-1.5 text-sm transition ${
+                      on
+                        ? "border-court bg-court text-white"
+                        : "border-line bg-paper text-ink hover:border-court/40"
+                    }`}
+                  >
+                    {t.label}
+                  </button>
+                );
+              })}
+            </div>
           </div>
         </div>
 

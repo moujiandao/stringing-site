@@ -9,28 +9,31 @@ import type { ServiceType, BookingStatus, DayPart, Weekday, BatchPhase } from ".
 // stripped of fluff.
 export const SERVICES: Record<
   ServiceType,
-  { label: string; laborCents: number; blurb: string; needsString: boolean; needsGrip: boolean }
+  { label: string; laborCents: number; blurb: string; priceNote: string; needsString: boolean; needsGrip: boolean }
 > = {
   byo_string: {
     label: "Bring Your Own String",
     laborCents: 2000,
     blurb: "You supply the string. I string it. $20 labor.",
+    priceNote: "labor only",
     needsString: false,
     needsGrip: false,
   },
   full_service: {
-    label: "Full Service",
+    label: "Stringing + Pick your String",
     laborCents: 2000,
     blurb: "Pick a string from the catalog. $20 labor + string cost.",
+    priceNote: "+ string cost",
     needsString: true,
     needsGrip: false,
   },
   regrip: {
     label: "Regrip",
-    laborCents: 200,
-    blurb: "Base grip or overgrip replacement. $2 labor + grip cost.",
+    laborCents: 300,
+    blurb: "Fresh overgrip of your choice, installed. $3 flat.",
+    priceNote: "incl. overgrip",
     needsString: false,
-    needsGrip: true,
+    needsGrip: false,
   },
 };
 
@@ -47,10 +50,13 @@ export const WEEKDAYS: { value: Weekday; label: string; short: string }[] = [
   { value: 6, label: "Saturday", short: "Sat" },
 ];
 
+// Bookable 1.5-hour meetup windows (owner is available 12pm–8pm daily).
 export const DAY_PARTS: { value: DayPart; label: string }[] = [
-  { value: "morning", label: "Morning" },
-  { value: "afternoon", label: "Afternoon" },
-  { value: "evening", label: "Evening" },
+  { value: "1200", label: "12:00–1:30 PM" },
+  { value: "1330", label: "1:30–3:00 PM" },
+  { value: "1500", label: "3:00–4:30 PM" },
+  { value: "1630", label: "4:30–6:00 PM" },
+  { value: "1800", label: "6:00–7:30 PM" },
 ];
 
 // --- Booking status display -------------------------------------------

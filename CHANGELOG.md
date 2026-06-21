@@ -9,10 +9,14 @@
 - Add single-page public home (`app/page.tsx`): hero + how-it-works, why strip, pricing, strings — with sticky scrollspy tabs and smooth-scroll.
 - Add site components: `components/site/{StickyTabs,Reveal,SiteHeader,SiteFooter}.tsx` (CSS + IntersectionObserver motion, `prefers-reduced-motion` gated).
 - Add dedicated `app/racquets/page.tsx` for racquets-for-sale.
+- Show a live map of the selected meetup hub in the booking form (keyless Google Maps embed, keyed by lat/lng or address).
 
 ### Changed
 - Break string color out of the folded-in name into the dedicated `color` field; catalog shows `brand · gauge · color`.
 - Restyle the booking form into grouped themed cards (logic unchanged); re-theme the status page.
+- Replace coarse morning/afternoon/evening availability with a days × 1.5-hour-windows (12pm–8pm) chip selector; store the cross-product as `(weekday, day_part)` rows. `DayPart` now holds window ids.
+- Rename the "Full Service" tier to "Stringing + Pick your String" (`SERVICES`, single source).
+- Switch the display font from Space Grotesk to Plus Jakarta Sans.
 
 ### Removed
 - Remove the standalone `/catalog` and `/book` routes (merged into the single-page home + `/racquets`).
