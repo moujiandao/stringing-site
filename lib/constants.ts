@@ -1,0 +1,97 @@
+// =====================================================================
+// Pricing, labels, and batching knobs. Shared by UI + server + batcher.
+// =====================================================================
+import type { ServiceType, BookingStatus, DayPart, Weekday, BatchPhase } from "./types";
+
+// --- Services ----------------------------------------------------------
+// Labor in cents. Full service adds the chosen string's price; regrip adds
+// grip cost handled per-grip in person. Mirrors the competitor's tiers but
+// stripped of fluff.
+export const SERVICES: Record<
+  ServiceType,
+  { label: string; laborCents: number; blurb: string; needsString: boolean; needsGrip: boolean }
+> = {
+  byo_string: {
+    label: "Bring Your Own String",
+    laborCents: 2000,
+    blurb: "You supply the string. I string it. $20 labor.",
+    needsString: false,
+    needsGrip: false,
+  },
+  full_service: {
+    label: "Full Service",
+    laborCents: 2000,
+    blurb: "Pick a string from the catalog. $20 labor + string cost.",
+    needsString: true,
+    needsGrip: false,
+  },
+  regrip: {
+    label: "Regrip",
+    laborCents: 200,
+    blurb: "Base grip or overgrip replacement. $2 labor + grip cost.",
+    needsString: false,
+    needsGrip: true,
+  },
+};
+
+export const SERVICE_TYPES = Object.keys(SERVICES) as ServiceType[];
+
+// --- Availability labels ----------------------------------------------
+export const WEEKDAYS: { value: Weekday; label: string; short: string }[] = [
+  { value: 0, label: "Sunday", short: "Sun" },
+  { value: 1, label: "Monday", short: "Mon" },
+  { value: 2, label: "Tuesday", short: "Tue" },
+  { value: 3, label: "Wednesday", short: "Wed" },
+  { value: 4, label: "Thursday", short: "Thu" },
+  { value: 5, label: "Friday", short: "Fri" },
+  { value: 6, label: "Saturday", short: "Sat" },
+];
+
+export const DAY_PARTS: { value: DayPart; label: string }[] = [
+  { value: "morning", label: "Morning" },
+  { value: "afternoon", label: "Afternoon" },
+  { value: "evening", label: "Evening" },
+];
+
+// --- Booking status display -------------------------------------------
+export const STATUS_LABELS: Record<BookingStatus, string> = {
+  submitted: "Submitted",
+  confirmed: "Confirmed",
+  dropoff_scheduled: "Drop-off scheduled",
+  picked_up: "Picked up — stringing",
+  ready: "Strung & ready",
+  return_scheduled: "Return scheduled",
+  completed: "Completed",
+  cancelled: "Cancelled",
+};
+
+// Owner-driven transitions allowed from each status (UI guards + server checks).
+// Batcher-driven transitions (confirmed→dropoff_scheduled, ready→return_scheduled)
+// are NOT in this map — only the cron sets those.
+export const OWNER_TRANSITIONS: Record<BookingStatus, BookingStatus[]> = {
+  submitted: ["confirmed", "cancelled"],
+  confirmed: ["cancelled"],
+  dropoff_scheduled: ["picked_up", "confirmed", "cancelled"],
+  picked_up: ["ready", "cancelled"],
+  ready: ["cancelled"],
+  return_scheduled: ["completed", "ready", "cancelled"],
+  completed: [],
+  cancelled: [],
+};
+
+// Which eligible status feeds each batching phase.
+export const PHASE_ELIGIBLE_STATUS: Record<BatchPhase, BookingStatus> = {
+  dropoff: "confirmed",
+  pickup: "ready",
+};
+
+// --- Batching knobs (the trip-minimization tuning levers) -------------
+export const MIN_BATCH_SIZE = 1; // smallest trip the batcher will schedule unprompted
+export const STRAGGLER_MAX_DAYS = 7; // force a solo trip after a booking waits this long
+export const TRIP_LEAD_DAYS = 2; // soonest a proposed trip date can be from "today"
+
+// --- Money helper ------------------------------------------------------
+export function formatCents(cents: number | null | undefined): string {
+  if (cents == null) return "—";
+  return `$${(cents / 100).toFixed(2)}`;
+}
