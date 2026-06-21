@@ -1,40 +1,27 @@
 import type { Metadata } from "next";
-import Link from "next/link";
+import { Space_Grotesk, Inter } from "next/font/google";
+import SiteFooter from "@/components/site/SiteFooter";
 import "./globals.css";
 
+const display = Space_Grotesk({
+  subsets: ["latin"],
+  weight: ["500", "600", "700"],
+  variable: "--font-space",
+});
+const sans = Inter({ subsets: ["latin"], variable: "--font-inter" });
+
 export const metadata: Metadata = {
-  title: "Racquet Stringing",
-  description: "Local racquet stringing — fast turnaround, contactless meetup.",
+  title: "East Bay Stringing — mobile racquet stringing",
+  description:
+    "Mobile racquet stringing for the East Bay. Three convenient meetup spots, no storefront, wholesale strings — lower prices, fast turnaround, pay in person.",
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en" className="h-full">
+    <html lang="en" className={`${display.variable} ${sans.variable} h-full`}>
       <body className="min-h-full flex flex-col">
-        <header className="border-b border-zinc-200 bg-white">
-          <nav className="mx-auto flex max-w-3xl items-center justify-between px-4 py-3">
-            <Link href="/" className="font-semibold tracking-tight">
-              Racquet Stringing
-            </Link>
-            <div className="flex gap-5 text-sm">
-              <Link href="/catalog" className="text-zinc-600 hover:text-zinc-900">
-                Catalog
-              </Link>
-              <Link
-                href="/book"
-                className="rounded-md bg-zinc-900 px-3 py-1.5 text-white hover:bg-zinc-700"
-              >
-                Book
-              </Link>
-            </div>
-          </nav>
-        </header>
-        <main className="mx-auto w-full max-w-3xl flex-1 px-4 py-8">{children}</main>
-        <footer className="border-t border-zinc-200 bg-white">
-          <div className="mx-auto max-w-3xl px-4 py-6 text-sm text-zinc-500">
-            Local racquet stringing · contactless meetup · cash / Venmo / Zelle
-          </div>
-        </footer>
+        {children}
+        <SiteFooter />
       </body>
     </html>
   );

@@ -97,176 +97,210 @@ export default function BookingForm() {
 
   if (token) {
     return (
-      <div className="rounded-lg border border-green-200 bg-green-50 p-6">
-        <h2 className="text-lg font-semibold">Request received</h2>
-        <p className="mt-2 text-zinc-700">
+      <div className="rounded-2xl border border-court bg-court-tint p-6 shadow-sm">
+        <h2 className="font-display text-lg font-semibold text-ink">Request received</h2>
+        <p className="mt-2 text-stone">
           I&apos;ll review it and email you to confirm and schedule a meetup. Keep this link to track status:
         </p>
-        <Link href={`/status/${token}`} className="mt-3 inline-block font-medium underline">
+        <Link
+          href={`/status/${token}`}
+          className="mt-4 inline-flex items-center rounded-lg bg-court px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-court-deep"
+        >
           View booking status
         </Link>
       </div>
     );
   }
 
-  const field = "w-full rounded-md border border-zinc-300 px-3 py-2 text-sm";
-  const label = "block text-sm font-medium text-zinc-700";
+  const field =
+    "w-full rounded-lg border border-line bg-paper px-3 py-2 text-sm text-ink placeholder:text-stone/70 transition focus:border-court focus:outline-none focus:ring-2 focus:ring-court/30";
+  const label = "block text-sm font-medium text-ink";
+  const sectionHeading = "font-display text-base font-semibold text-ink";
+  const card = "rounded-2xl border border-line bg-paper p-5 shadow-sm sm:p-6";
 
   return (
-    <form onSubmit={submit} className="space-y-6">
-      <div className="grid gap-4 sm:grid-cols-2">
-        <div>
-          <label className={label}>Name</label>
-          <input className={field} value={name} onChange={(e) => setName(e.target.value)} required />
+    <form onSubmit={submit} className="space-y-5">
+      {/* Your info */}
+      <fieldset className={card}>
+        <legend className={sectionHeading}>Your info</legend>
+        <div className="mt-4 grid gap-4 sm:grid-cols-2">
+          <div className="space-y-1.5">
+            <label className={label}>Name</label>
+            <input className={field} value={name} onChange={(e) => setName(e.target.value)} required />
+          </div>
+          <div className="space-y-1.5">
+            <label className={label}>Email</label>
+            <input className={field} type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
+          </div>
+          <div className="space-y-1.5">
+            <label className={label}>Phone (optional)</label>
+            <input className={field} value={phone} onChange={(e) => setPhone(e.target.value)} />
+          </div>
+          <div className="space-y-1.5">
+            <label className={label}>Racquet (so I can ID it)</label>
+            <input
+              className={field}
+              value={racquetLabel}
+              onChange={(e) => setRacquetLabel(e.target.value)}
+              placeholder="e.g. Wilson Blade, blue dampener"
+            />
+          </div>
         </div>
-        <div>
-          <label className={label}>Email</label>
-          <input className={field} type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
-        </div>
-        <div>
-          <label className={label}>Phone (optional)</label>
-          <input className={field} value={phone} onChange={(e) => setPhone(e.target.value)} />
-        </div>
-        <div>
-          <label className={label}>Racquet (so I can ID it)</label>
-          <input
-            className={field}
-            value={racquetLabel}
-            onChange={(e) => setRacquetLabel(e.target.value)}
-            placeholder="e.g. Wilson Blade, blue dampener"
-          />
-        </div>
-      </div>
+      </fieldset>
 
-      <div className="space-y-2">
-        <span className={label}>Service</span>
-        <div className="grid gap-2 sm:grid-cols-3">
+      {/* Service */}
+      <fieldset className={card}>
+        <legend className={sectionHeading}>Service</legend>
+        <div className="mt-4 grid gap-2 sm:grid-cols-3">
           {SERVICE_TYPES.map((t) => (
             <label
               key={t}
-              className={`cursor-pointer rounded-md border p-3 text-sm ${
-                serviceType === t ? "border-zinc-900 bg-zinc-50" : "border-zinc-300"
+              className={`flex cursor-pointer items-center rounded-lg border p-3 text-sm transition ${
+                serviceType === t
+                  ? "border-court bg-court-tint text-ink"
+                  : "border-line bg-paper text-ink hover:border-court/40"
               }`}
             >
               <input
                 type="radio"
                 name="service"
-                className="mr-2"
+                className="mr-2 accent-court"
                 checked={serviceType === t}
                 onChange={() => setServiceType(t)}
               />
-              {SERVICES[t].label} — {formatCents(SERVICES[t].laborCents)}
+              <span>
+                {SERVICES[t].label} <span className="text-stone">— {formatCents(SERVICES[t].laborCents)}</span>
+              </span>
             </label>
           ))}
         </div>
-      </div>
 
-      {serviceType === "full_service" && (
-        <div>
-          <label className={label}>String</label>
-          <select className={field} value={stringId} onChange={(e) => setStringId(e.target.value)}>
-            <option value="">Select a string…</option>
-            {strings.map((s) => (
-              <option key={s.id} value={s.id}>
-                {s.name}
-                {s.color ? `, ${s.color}` : ""} {s.gauge ? `(${s.gauge})` : ""} — {formatCents(s.priceCents)}
-              </option>
+        {serviceType === "full_service" && (
+          <div className="mt-4 space-y-1.5">
+            <label className={label}>String</label>
+            <select className={field} value={stringId} onChange={(e) => setStringId(e.target.value)}>
+              <option value="">Select a string…</option>
+              {strings.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.name}
+                  {s.color ? `, ${s.color}` : ""} {s.gauge ? `(${s.gauge})` : ""} — {formatCents(s.priceCents)}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+
+        {serviceType === "regrip" && (
+          <div className="mt-4 space-y-1.5">
+            <label className={label}>Number of grips</label>
+            <input
+              className={`${field} max-w-32`}
+              type="number"
+              min={1}
+              value={gripQty}
+              onChange={(e) => setGripQty(Math.max(1, Number(e.target.value)))}
+            />
+          </div>
+        )}
+      </fieldset>
+
+      {/* Where & when */}
+      <fieldset className={card}>
+        <legend className={sectionHeading}>Where &amp; when</legend>
+
+        <div className="mt-4 space-y-2">
+          <span className={label}>Meetup spot (closest to you)</span>
+          <div className="space-y-2">
+            {hubs.map((h) => (
+              <label
+                key={h.id}
+                className={`flex cursor-pointer items-start gap-2.5 rounded-lg border p-3 text-sm transition ${
+                  hubId === h.id
+                    ? "border-court bg-court-tint"
+                    : "border-line bg-paper hover:border-court/40"
+                }`}
+              >
+                <input
+                  type="radio"
+                  name="hub"
+                  className="mt-0.5 accent-court"
+                  checked={hubId === h.id}
+                  onChange={() => setHubId(h.id)}
+                />
+                <span>
+                  <span className="font-medium text-ink">{h.name}</span>
+                  {h.description ? <span className="block text-stone">{h.description}</span> : null}
+                </span>
+              </label>
             ))}
-          </select>
-        </div>
-      )}
-
-      {serviceType === "regrip" && (
-        <div>
-          <label className={label}>Number of grips</label>
-          <input
-            className={field}
-            type="number"
-            min={1}
-            value={gripQty}
-            onChange={(e) => setGripQty(Math.max(1, Number(e.target.value)))}
-          />
-        </div>
-      )}
-
-      <div className="space-y-2">
-        <span className={label}>Meetup spot (closest to you)</span>
-        <div className="space-y-2">
-          {hubs.map((h) => (
             <label
-              key={h.id}
-              className={`flex cursor-pointer items-start gap-2 rounded-md border p-3 text-sm ${
-                hubId === h.id ? "border-zinc-900 bg-zinc-50" : "border-zinc-300"
+              className={`flex cursor-pointer items-center gap-2.5 rounded-lg border p-3 text-sm transition ${
+                hubId === NONE
+                  ? "border-court bg-court-tint"
+                  : "border-line bg-paper hover:border-court/40"
               }`}
             >
               <input
                 type="radio"
                 name="hub"
-                checked={hubId === h.id}
-                onChange={() => setHubId(h.id)}
+                className="accent-court"
+                checked={hubId === NONE}
+                onChange={() => setHubId(NONE)}
               />
-              <span>
-                <span className="font-medium">{h.name}</span>
-                {h.description ? <span className="block text-zinc-500">{h.description}</span> : null}
-              </span>
+              <span className="text-ink">None of these are near me</span>
             </label>
-          ))}
-          <label
-            className={`flex cursor-pointer items-center gap-2 rounded-md border p-3 text-sm ${
-              hubId === NONE ? "border-zinc-900 bg-zinc-50" : "border-zinc-300"
-            }`}
-          >
-            <input type="radio" name="hub" checked={hubId === NONE} onChange={() => setHubId(NONE)} />
-            None of these are near me
-          </label>
+          </div>
         </div>
-      </div>
 
-      <div className="space-y-2">
-        <span className={label}>When are you free to meet?</span>
-        <div className="overflow-x-auto">
-          <table className="text-sm">
-            <thead>
-              <tr>
-                <th className="p-1" />
-                {DAY_PARTS.map((d) => (
-                  <th key={d.value} className="p-1 font-medium text-zinc-600">
-                    {d.label}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {WEEKDAYS.map((w) => (
-                <tr key={w.value}>
-                  <td className="p-1 pr-2 font-medium text-zinc-600">{w.short}</td>
+        <div className="mt-5 space-y-2">
+          <span className={label}>When are you free to meet?</span>
+          <div className="overflow-x-auto rounded-lg border border-line bg-sand/40 p-2">
+            <table className="text-sm">
+              <thead>
+                <tr>
+                  <th className="p-1.5" />
                   {DAY_PARTS.map((d) => (
-                    <td key={d.value} className="p-1 text-center">
-                      <input
-                        type="checkbox"
-                        checked={slots.has(slotKey(w.value, d.value))}
-                        onChange={() => toggleSlot(w.value, d.value)}
-                      />
-                    </td>
+                    <th key={d.value} className="p-1.5 font-medium text-stone">
+                      {d.label}
+                    </th>
                   ))}
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {WEEKDAYS.map((w) => (
+                  <tr key={w.value}>
+                    <td className="p-1.5 pr-3 font-medium text-stone">{w.short}</td>
+                    {DAY_PARTS.map((d) => (
+                      <td key={d.value} className="p-1.5 text-center">
+                        <input
+                          type="checkbox"
+                          className="h-4 w-4 accent-court"
+                          checked={slots.has(slotKey(w.value, d.value))}
+                          onChange={() => toggleSlot(w.value, d.value)}
+                        />
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
-      </div>
 
-      <div>
-        <label className={label}>Notes (optional)</label>
-        <textarea className={field} rows={3} value={notes} onChange={(e) => setNotes(e.target.value)} />
-      </div>
+        <div className="mt-5 space-y-1.5">
+          <label className={label}>Notes (optional)</label>
+          <textarea className={field} rows={3} value={notes} onChange={(e) => setNotes(e.target.value)} />
+        </div>
+      </fieldset>
 
-      {error && <p className="text-sm text-red-600">{error}</p>}
+      {error && (
+        <p className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>
+      )}
 
       <button
         type="submit"
         disabled={submitting}
-        className="rounded-md bg-zinc-900 px-5 py-2.5 text-white hover:bg-zinc-700 disabled:opacity-50"
+        className="rounded-lg bg-court px-5 py-2.5 font-medium text-white transition-colors hover:bg-court-deep disabled:cursor-not-allowed disabled:opacity-50"
       >
         {submitting ? "Submitting…" : "Submit booking"}
       </button>

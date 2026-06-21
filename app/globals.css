@@ -1,13 +1,101 @@
 @import "tailwindcss";
 
+/* ------------------------------------------------------------------ */
+/* East Bay Stringing — warm-minimal theme                            */
+/* ------------------------------------------------------------------ */
+@theme {
+  /* Warm neutrals */
+  --color-cream: #f6f4ef; /* page background */
+  --color-sand: #efeae0; /* subtle surface tint */
+  --color-paper: #fffdf9; /* cards */
+  --color-ink: #1b1b18; /* primary text */
+  --color-stone: #6f6d64; /* muted text */
+  --color-line: #e7e1d5; /* hairline borders */
+
+  /* Court green accent */
+  --color-court: #2f5d3a;
+  --color-court-deep: #244a2e;
+  --color-court-tint: #e8efe7;
+
+  /* Optic-yellow micro accent (use sparingly) */
+  --color-optic: #c8e84b;
+
+  /* Type */
+  --font-sans: var(--font-inter);
+  --font-display: var(--font-space);
+}
+
 :root {
-  --background: #fafafa;
-  --foreground: #18181b;
+  --background: var(--color-cream);
+  --foreground: var(--color-ink);
+}
+
+html {
+  scroll-behavior: smooth;
+  /* sticky-nav offset for scroll-to anchors */
+  scroll-padding-top: 5rem;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  background: var(--color-cream);
+  color: var(--color-ink);
+  font-family: var(--font-sans), -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+.font-display {
+  font-family: var(--font-display), var(--font-sans), sans-serif;
+}
+
+/* ------------------------------------------------------------------ */
+/* Background motif: faint string-bed grid                            */
+/* ------------------------------------------------------------------ */
+.stringbed {
+  background-image:
+    linear-gradient(to right, rgba(47, 93, 58, 0.05) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(47, 93, 58, 0.05) 1px, transparent 1px);
+  background-size: 22px 22px;
+}
+
+.court-glow {
+  background:
+    radial-gradient(60% 50% at 18% 0%, rgba(47, 93, 58, 0.10), transparent 70%),
+    radial-gradient(50% 40% at 100% 10%, rgba(200, 232, 75, 0.12), transparent 70%);
+}
+
+/* ------------------------------------------------------------------ */
+/* Scroll-reveal (driven by Reveal.tsx via IntersectionObserver)      */
+/* ------------------------------------------------------------------ */
+.reveal {
+  opacity: 0;
+  transform: translateY(18px);
+  transition:
+    opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1),
+    transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: opacity, transform;
+}
+.reveal[data-shown="true"] {
+  opacity: 1;
+  transform: none;
+}
+
+/* Hide scrollbar on the mobile tab strip while keeping it scrollable. */
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  .reveal {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
 }

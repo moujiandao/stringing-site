@@ -2,6 +2,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { rowToBooking, rowToHub, rowToTripBatch } from "@/lib/mappers";
 import { STATUS_LABELS, DAY_PARTS, formatCents } from "@/lib/constants";
 import type { BookingStatus } from "@/lib/types";
+import SiteHeader from "@/components/site/SiteHeader";
 
 export const dynamic = "force-dynamic";
 
@@ -31,9 +32,14 @@ export default async function StatusPage({ params }: { params: Promise<{ token: 
   const { data: row } = await supabase.from("bookings").select("*").eq("public_token", token).maybeSingle();
   if (!row) {
     return (
-      <div className="rounded-lg border border-zinc-200 bg-white p-6">
-        <h1 className="text-lg font-semibold">Booking not found</h1>
-        <p className="mt-2 text-zinc-600">Double-check your link.</p>
+      <div className="min-h-screen bg-cream">
+        <SiteHeader />
+        <main className="mx-auto max-w-2xl px-6 py-16">
+          <div className="rounded-2xl border border-line bg-paper p-6 shadow-sm">
+            <h1 className="font-display text-lg font-semibold text-ink">Booking not found</h1>
+            <p className="mt-2 text-stone">Double-check your link.</p>
+          </div>
+        </main>
       </div>
     );
   }
@@ -60,65 +66,71 @@ export default async function StatusPage({ params }: { params: Promise<{ token: 
   const dayPartLabel = (dp: string | null) => DAY_PARTS.find((d) => d.value === dp)?.label ?? "";
 
   return (
-    <div className="space-y-8">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Booking status</h1>
-        <p className="mt-1 text-zinc-600">{booking.customerName}</p>
-      </div>
+    <div className="min-h-screen bg-cream">
+      <SiteHeader />
 
-      {cancelled ? (
-        <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-red-700">
-          This booking was cancelled.
+      <main className="mx-auto max-w-2xl space-y-8 px-6 py-12 sm:py-16">
+        <div>
+          <h1 className="font-display text-2xl font-semibold tracking-tight text-ink">
+            Booking status
+          </h1>
+          <p className="mt-1 text-stone">{booking.customerName}</p>
         </div>
-      ) : (
-        <ol className="space-y-2">
-          {TIMELINE.map((s, i) => (
-            <li key={s} className="flex items-center gap-3">
-              <span
-                className={`flex h-5 w-5 items-center justify-center rounded-full text-xs ${
-                  i <= activeIdx ? "bg-zinc-900 text-white" : "bg-zinc-200 text-zinc-500"
-                }`}
-              >
-                {i < activeIdx ? "✓" : i === activeIdx ? "•" : ""}
-              </span>
-              <span className={i === activeIdx ? "font-semibold" : "text-zinc-500"}>
-                {STATUS_LABELS[s]}
-              </span>
-            </li>
-          ))}
-        </ol>
-      )}
 
-      <div className="grid gap-4 sm:grid-cols-2">
-        {hub && (
-          <div className="rounded-lg border border-zinc-200 bg-white p-4">
-            <p className="text-sm font-medium text-zinc-500">Meetup spot</p>
-            <p className="font-medium">{hub.name}</p>
-            {hub.description ? <p className="text-sm text-zinc-600">{hub.description}</p> : null}
+        {cancelled ? (
+          <div className="rounded-2xl border border-red-200 bg-red-50 p-4 text-red-700">
+            This booking was cancelled.
           </div>
+        ) : (
+          <ol className="space-y-2 rounded-2xl border border-line bg-paper p-5 shadow-sm">
+            {TIMELINE.map((s, i) => (
+              <li key={s} className="flex items-center gap-3">
+                <span
+                  className={`flex h-5 w-5 items-center justify-center rounded-full text-xs ${
+                    i <= activeIdx ? "bg-court text-white" : "bg-sand text-stone"
+                  }`}
+                >
+                  {i < activeIdx ? "✓" : i === activeIdx ? "•" : ""}
+                </span>
+                <span className={i === activeIdx ? "font-semibold text-ink" : "text-stone"}>
+                  {STATUS_LABELS[s]}
+                </span>
+              </li>
+            ))}
+          </ol>
         )}
-        {dropoff && (
-          <div className="rounded-lg border border-zinc-200 bg-white p-4">
-            <p className="text-sm font-medium text-zinc-500">Drop-off</p>
-            <p className="font-medium">
-              {fmtDate(dropoff.tripDate)} {dropoff.dayPart ? `(${dayPartLabel(dropoff.dayPart)})` : ""}
-            </p>
-          </div>
-        )}
-        {pickup && (
-          <div className="rounded-lg border border-zinc-200 bg-white p-4">
-            <p className="text-sm font-medium text-zinc-500">Pick-up</p>
-            <p className="font-medium">
-              {fmtDate(pickup.tripDate)} {pickup.dayPart ? `(${dayPartLabel(pickup.dayPart)})` : ""}
-            </p>
-            {booking.priceQuoteCents != null && (
-              <p className="mt-1 text-sm text-zinc-600">
-                Bring {formatCents(booking.priceQuoteCents)} — cash / Venmo / Zelle
+
+        <div className="grid gap-4 sm:grid-cols-2">
+          {hub && (
+            <div className="rounded-2xl border border-line bg-paper p-4 shadow-sm">
+              <p className="text-sm font-medium text-stone">Meetup spot</p>
+              <p className="font-medium text-ink">{hub.name}</p>
+              {hub.description ? <p className="text-sm text-stone">{hub.description}</p> : null}
+            </div>
+          )}
+          {dropoff && (
+            <div className="rounded-2xl border border-line bg-paper p-4 shadow-sm">
+              <p className="text-sm font-medium text-stone">Drop-off</p>
+              <p className="font-medium text-ink">
+                {fmtDate(dropoff.tripDate)} {dropoff.dayPart ? `(${dayPartLabel(dropoff.dayPart)})` : ""}
               </p>
-            )}
-          </div>
-        )}
-      </div>
+            </div>
+          )}
+          {pickup && (
+            <div className="rounded-2xl border border-line bg-paper p-4 shadow-sm">
+              <p className="text-sm font-medium text-stone">Pick-up</p>
+              <p className="font-medium text-ink">
+                {fmtDate(pickup.tripDate)} {pickup.dayPart ? `(${dayPartLabel(pickup.dayPart)})` : ""}
+              </p>
+              {booking.priceQuoteCents != null && (
+                <p className="mt-1 text-sm text-stone">
+                  Bring {formatCents(booking.priceQuoteCents)} — cash / Venmo / Zelle
+                </p>
+              )}
+            </div>
+          )}
+        </div>
+      </main>
     </div>
   );
 }
