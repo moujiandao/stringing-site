@@ -175,11 +175,14 @@ export default function BookingForm() {
     "mt-5 inline-flex items-center gap-1 rounded-lg bg-court px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-court-deep";
 
   const selectedHub = hubId && hubId !== NONE ? hubs.find((h) => h.id === hubId) ?? null : null;
-  const mapQuery = selectedHub
+  const selectedQuery = selectedHub
     ? selectedHub.lat != null && selectedHub.lng != null
       ? `${selectedHub.lat},${selectedHub.lng}`
       : selectedHub.description || selectedHub.name
     : null;
+  // Default to a Bay Area view so the map is always visible; zoom in once a hub is picked.
+  const mapQuery = selectedQuery || "San Francisco Bay Area, CA";
+  const mapZoom = selectedQuery ? 15 : 9;
 
   return (
     <form onSubmit={submit} className="space-y-5">
@@ -322,21 +325,19 @@ export default function BookingForm() {
             </div>
 
             <div className="min-h-44 overflow-hidden rounded-lg border border-line bg-sand/40">
-              {selectedHub && mapQuery ? (
+              {hubId === NONE ? (
+                <div className="flex h-full min-h-44 items-center justify-center p-4 text-center text-xs text-stone">
+                  No problem — I&apos;ll reach out to arrange a spot.
+                </div>
+              ) : (
                 <iframe
-                  key={mapQuery}
-                  title={`Map of ${selectedHub.name}`}
-                  src={`https://maps.google.com/maps?q=${encodeURIComponent(mapQuery)}&z=15&output=embed`}
+                  key={`${mapQuery}-${mapZoom}`}
+                  title={selectedHub ? `Map of ${selectedHub.name}` : "Service area map"}
+                  src={`https://maps.google.com/maps?q=${encodeURIComponent(mapQuery)}&z=${mapZoom}&output=embed`}
                   loading="lazy"
                   referrerPolicy="no-referrer-when-downgrade"
                   className="h-full min-h-44 w-full border-0"
                 />
-              ) : (
-                <div className="flex h-full min-h-44 items-center justify-center p-4 text-center text-xs text-stone">
-                  {hubId === NONE
-                    ? "No problem — I'll reach out to arrange a spot."
-                    : "Select a meetup spot to see it on the map."}
-                </div>
               )}
             </div>
           </div>
