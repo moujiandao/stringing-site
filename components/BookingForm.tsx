@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { rowToHub, rowToString } from "@/lib/mappers";
@@ -8,6 +8,21 @@ import { SERVICES, SERVICE_TYPES, WEEKDAYS, DAY_PARTS, formatCents } from "@/lib
 import type { Hub, StringItem, ServiceType, AvailabilityWindow, Weekday, DayPart } from "@/lib/types";
 
 const NONE = "__none__";
+const TOTAL_STEPS = 4;
+
+function StepHead({ n, title }: { n: number; title: string }) {
+  return (
+    <legend className="flex w-full items-center gap-2.5">
+      <span className="flex h-6 w-6 items-center justify-center rounded-full bg-court text-xs font-semibold text-white">
+        {n}
+      </span>
+      <span className="font-display text-base font-semibold text-ink">{title}</span>
+      <span className="ml-auto text-xs text-stone">
+        Step {n} of {TOTAL_STEPS}
+      </span>
+    </legend>
+  );
+}
 
 export default function BookingForm() {
   const [hubs, setHubs] = useState<Hub[]>([]);
@@ -25,15 +40,19 @@ export default function BookingForm() {
   const [days, setDays] = useState<Set<Weekday>>(new Set());
   const [times, setTimes] = useState<Set<DayPart>>(new Set());
 
+  // Guided flow: `step` is the furthest-revealed step (1..TOTAL_STEPS).
+  const [step, setStep] = useState(1);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [token, setToken] = useState<string | null>(null);
 
+  const ref2 = useRef<HTMLFieldSetElement>(null);
+  const ref3 = useRef<HTMLFieldSetElement>(null);
+  const ref4 = useRef<HTMLFieldSetElement>(null);
+
   useEffect(() => {
-    // Preselect the service if arriving from a pricing card (/?service=...#book).
     const svc = new URLSearchParams(window.location.search).get("service");
     if (svc && (SERVICE_TYPES as readonly string[]).includes(svc)) {
-      // One-time init from the pricing-card link; not a reactive update.
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setServiceType(svc as ServiceType);
     }
@@ -47,6 +66,29 @@ export default function BookingForm() {
       setStrings((s ?? []).map(rowToString));
     })();
   }, []);
+
+  // When a new step reveals, slide it into view (below the sticky nav).
+  useEffect(() => {
+    const refs: Record<number, React.RefObject<HTMLFieldSetElement | null>> = { 2: ref2, 3: ref3, 4: ref4 };
+    if (step > 1) refs[step]?.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, [step]);
+
+  function advance(to: number) {
+    setError(null);
+    setStep((s) => Math.max(s, to));
+  }
+  function next1() {
+    if (!name.trim() || !email.trim()) return setError("Name and email are required.");
+    advance(2);
+  }
+  function next2() {
+    if (serviceType === "full_service" && !stringId) return setError("Pick a string for full service.");
+    advance(3);
+  }
+  function next3() {
+    if (!hubId) return setError("Pick a meetup spot (or 'none near me').");
+    advance(4);
+  }
 
   function toggleDay(w: Weekday) {
     setDays((prev) => {
@@ -128,8 +170,9 @@ export default function BookingForm() {
   const field =
     "w-full rounded-lg border border-line bg-paper px-3 py-2 text-sm text-ink placeholder:text-stone/70 transition focus:border-court focus:outline-none focus:ring-2 focus:ring-court/30";
   const label = "block text-sm font-medium text-ink";
-  const sectionHeading = "font-display text-base font-semibold text-ink";
-  const card = "rounded-2xl border border-line bg-paper p-5 shadow-sm sm:p-6";
+  const card = "rounded-2xl border border-line bg-paper p-5 shadow-sm sm:p-6 scroll-mt-24";
+  const continueBtn =
+    "mt-5 inline-flex items-center gap-1 rounded-lg bg-court px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-court-deep";
 
   const selectedHub = hubId && hubId !== NONE ? hubs.find((h) => h.id === hubId) ?? null : null;
   const mapQuery = selectedHub
@@ -140,9 +183,9 @@ export default function BookingForm() {
 
   return (
     <form onSubmit={submit} className="space-y-5">
-      {/* Your info */}
+      {/* Step 1 — Your info */}
       <fieldset className={card}>
-        <legend className={sectionHeading}>Your info</legend>
+        <StepHead n={1} title="Your info" />
         <div className="mt-4 grid gap-4 sm:grid-cols-2">
           <div className="space-y-1.5">
             <label className={label}>Name</label>
@@ -166,79 +209,87 @@ export default function BookingForm() {
             />
           </div>
         </div>
+        {step === 1 && (
+          <button type="button" onClick={next1} className={continueBtn}>
+            Continue →
+          </button>
+        )}
       </fieldset>
 
-      {/* Service */}
-      <fieldset className={card}>
-        <legend className={sectionHeading}>Service</legend>
-        <div className="mt-4 grid gap-2 sm:grid-cols-3">
-          {SERVICE_TYPES.map((t) => (
-            <label
-              key={t}
-              className={`flex cursor-pointer items-center rounded-lg border p-3 text-sm transition ${
-                serviceType === t
-                  ? "border-court bg-court-tint text-ink"
-                  : "border-line bg-paper text-ink hover:border-court/40"
-              }`}
-            >
+      {/* Step 2 — Service */}
+      {step >= 2 && (
+        <fieldset ref={ref2} className={`${card} step-in`}>
+          <StepHead n={2} title="Service" />
+          <div className="mt-4 grid gap-2 sm:grid-cols-3">
+            {SERVICE_TYPES.map((t) => (
+              <label
+                key={t}
+                className={`flex cursor-pointer items-center rounded-lg border p-3 text-sm transition ${
+                  serviceType === t
+                    ? "border-court bg-court-tint text-ink"
+                    : "border-line bg-paper text-ink hover:border-court/40"
+                }`}
+              >
+                <input
+                  type="radio"
+                  name="service"
+                  className="mr-2 accent-court"
+                  checked={serviceType === t}
+                  onChange={() => setServiceType(t)}
+                />
+                <span>
+                  {SERVICES[t].label} <span className="text-stone">— {formatCents(SERVICES[t].laborCents)}</span>
+                </span>
+              </label>
+            ))}
+          </div>
+
+          {serviceType === "full_service" && (
+            <div className="mt-4 space-y-1.5">
+              <label className={label}>String</label>
+              <select className={field} value={stringId} onChange={(e) => setStringId(e.target.value)}>
+                <option value="">Select a string…</option>
+                {strings.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.name}
+                    {s.color ? `, ${s.color}` : ""} {s.gauge ? `(${s.gauge})` : ""} — {formatCents(s.priceCents)}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          {serviceType === "regrip" && (
+            <div className="mt-4 space-y-1.5">
+              <label className={label}>Number of grips</label>
               <input
-                type="radio"
-                name="service"
-                className="mr-2 accent-court"
-                checked={serviceType === t}
-                onChange={() => setServiceType(t)}
+                className={`${field} max-w-32`}
+                type="number"
+                min={1}
+                value={gripQty}
+                onChange={(e) => setGripQty(Math.max(1, Number(e.target.value)))}
               />
-              <span>
-                {SERVICES[t].label} <span className="text-stone">— {formatCents(SERVICES[t].laborCents)}</span>
-              </span>
-            </label>
-          ))}
-        </div>
+            </div>
+          )}
+          {step === 2 && (
+            <button type="button" onClick={next2} className={continueBtn}>
+              Continue →
+            </button>
+          )}
+        </fieldset>
+      )}
 
-        {serviceType === "full_service" && (
-          <div className="mt-4 space-y-1.5">
-            <label className={label}>String</label>
-            <select className={field} value={stringId} onChange={(e) => setStringId(e.target.value)}>
-              <option value="">Select a string…</option>
-              {strings.map((s) => (
-                <option key={s.id} value={s.id}>
-                  {s.name}
-                  {s.color ? `, ${s.color}` : ""} {s.gauge ? `(${s.gauge})` : ""} — {formatCents(s.priceCents)}
-                </option>
-              ))}
-            </select>
-          </div>
-        )}
-
-        {serviceType === "regrip" && (
-          <div className="mt-4 space-y-1.5">
-            <label className={label}>Number of grips</label>
-            <input
-              className={`${field} max-w-32`}
-              type="number"
-              min={1}
-              value={gripQty}
-              onChange={(e) => setGripQty(Math.max(1, Number(e.target.value)))}
-            />
-          </div>
-        )}
-      </fieldset>
-
-      {/* Where & when */}
-      <fieldset className={card}>
-        <legend className={sectionHeading}>Where &amp; when</legend>
-
-        <div className="mt-4 space-y-2">
-          <span className={label}>Meetup spot (closest to you)</span>
-          <div className="grid gap-4 lg:grid-cols-[1fr_17rem]">
+      {/* Step 3 — Meetup spot */}
+      {step >= 3 && (
+        <fieldset ref={ref3} className={`${card} step-in`}>
+          <StepHead n={3} title="Meetup spot" />
+          <div className="mt-4 grid gap-4 lg:grid-cols-[1fr_17rem]">
             <div className="space-y-2">
               {hubs.map((h) => (
                 <label
                   key={h.id}
                   className={`flex cursor-pointer items-start gap-2.5 rounded-lg border p-3 text-sm transition ${
-                    hubId === h.id
-                      ? "border-court bg-court-tint"
-                      : "border-line bg-paper hover:border-court/40"
+                    hubId === h.id ? "border-court bg-court-tint" : "border-line bg-paper hover:border-court/40"
                   }`}
                 >
                   <input
@@ -256,9 +307,7 @@ export default function BookingForm() {
               ))}
               <label
                 className={`flex cursor-pointer items-center gap-2.5 rounded-lg border p-3 text-sm transition ${
-                  hubId === NONE
-                    ? "border-court bg-court-tint"
-                    : "border-line bg-paper hover:border-court/40"
+                  hubId === NONE ? "border-court bg-court-tint" : "border-line bg-paper hover:border-court/40"
                 }`}
               >
                 <input
@@ -272,7 +321,6 @@ export default function BookingForm() {
               </label>
             </div>
 
-            {/* Map of the selected meetup spot */}
             <div className="min-h-44 overflow-hidden rounded-lg border border-line bg-sand/40">
               {selectedHub && mapQuery ? (
                 <iframe
@@ -292,75 +340,82 @@ export default function BookingForm() {
               )}
             </div>
           </div>
-        </div>
+          {step === 3 && (
+            <button type="button" onClick={next3} className={continueBtn}>
+              Continue →
+            </button>
+          )}
+        </fieldset>
+      )}
 
-        <div className="mt-5 space-y-4">
-          <div className="space-y-2">
-            <span className={label}>Which days work? (pick any)</span>
-            <div className="flex flex-wrap gap-2">
-              {WEEKDAYS.map((w) => {
-                const on = days.has(w.value);
-                return (
-                  <button
-                    type="button"
-                    key={w.value}
-                    onClick={() => toggleDay(w.value)}
-                    aria-pressed={on}
-                    className={`rounded-full border px-3.5 py-1.5 text-sm transition ${
-                      on
-                        ? "border-court bg-court text-white"
-                        : "border-line bg-paper text-ink hover:border-court/40"
-                    }`}
-                  >
-                    {w.short}
-                  </button>
-                );
-              })}
+      {/* Step 4 — When */}
+      {step >= 4 && (
+        <fieldset ref={ref4} className={`${card} step-in`}>
+          <StepHead n={4} title="When are you free?" />
+          <div className="mt-4 space-y-4">
+            <div className="space-y-2">
+              <span className={label}>Which days work? (pick any)</span>
+              <div className="flex flex-wrap gap-2">
+                {WEEKDAYS.map((w) => {
+                  const on = days.has(w.value);
+                  return (
+                    <button
+                      type="button"
+                      key={w.value}
+                      onClick={() => toggleDay(w.value)}
+                      aria-pressed={on}
+                      className={`rounded-full border px-3.5 py-1.5 text-sm transition ${
+                        on ? "border-court bg-court text-white" : "border-line bg-paper text-ink hover:border-court/40"
+                      }`}
+                    >
+                      {w.short}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <span className={label}>Which times? (I meet 12–8pm — pick any)</span>
+              <div className="flex flex-wrap gap-2">
+                {DAY_PARTS.map((t) => {
+                  const on = times.has(t.value);
+                  return (
+                    <button
+                      type="button"
+                      key={t.value}
+                      onClick={() => toggleTime(t.value)}
+                      aria-pressed={on}
+                      className={`rounded-full border px-3.5 py-1.5 text-sm transition ${
+                        on ? "border-court bg-court text-white" : "border-line bg-paper text-ink hover:border-court/40"
+                      }`}
+                    >
+                      {t.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <label className={label}>Notes (optional)</label>
+              <textarea className={field} rows={3} value={notes} onChange={(e) => setNotes(e.target.value)} />
             </div>
           </div>
 
-          <div className="space-y-2">
-            <span className={label}>Which times? (I meet 12–8pm — pick any)</span>
-            <div className="flex flex-wrap gap-2">
-              {DAY_PARTS.map((t) => {
-                const on = times.has(t.value);
-                return (
-                  <button
-                    type="button"
-                    key={t.value}
-                    onClick={() => toggleTime(t.value)}
-                    aria-pressed={on}
-                    className={`rounded-full border px-3.5 py-1.5 text-sm transition ${
-                      on
-                        ? "border-court bg-court text-white"
-                        : "border-line bg-paper text-ink hover:border-court/40"
-                    }`}
-                  >
-                    {t.label}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        </div>
-
-        <div className="mt-5 space-y-1.5">
-          <label className={label}>Notes (optional)</label>
-          <textarea className={field} rows={3} value={notes} onChange={(e) => setNotes(e.target.value)} />
-        </div>
-      </fieldset>
+          <button
+            type="submit"
+            disabled={submitting}
+            className="mt-5 rounded-lg bg-court px-5 py-2.5 font-medium text-white transition-colors hover:bg-court-deep disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {submitting ? "Submitting…" : "Submit booking"}
+          </button>
+        </fieldset>
+      )}
 
       {error && (
         <p className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>
       )}
-
-      <button
-        type="submit"
-        disabled={submitting}
-        className="rounded-lg bg-court px-5 py-2.5 font-medium text-white transition-colors hover:bg-court-deep disabled:cursor-not-allowed disabled:opacity-50"
-      >
-        {submitting ? "Submitting…" : "Submit booking"}
-      </button>
     </form>
   );
 }
