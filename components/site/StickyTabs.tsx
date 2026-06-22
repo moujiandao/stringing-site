@@ -120,12 +120,12 @@ export default function StickyTabs() {
               );
             })}
 
-            {/* Racquets lives on its own route — set slightly apart. */}
+            {/* Shop lives on its own route — set slightly apart. */}
             <Link
               href="/racquets"
               className="ml-2 shrink-0 border-l border-line pl-3 text-sm font-medium text-stone transition-colors hover:text-court"
             >
-              Racquets
+              Shop
             </Link>
           </div>
         </div>

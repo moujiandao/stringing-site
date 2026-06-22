@@ -24,7 +24,7 @@ export default function SiteHeader() {
             href="/racquets"
             className="text-sm text-stone transition-colors hover:text-ink"
           >
-            Racquets
+            Shop
           </Link>
           <Link
             href="/#book"
