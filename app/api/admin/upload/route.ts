@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import sharp from "sharp";
-import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient as createServerSupabase } from "@/lib/supabase/server";
 
 export const runtime = "nodejs";
@@ -131,14 +130,29 @@ export async function POST(req: NextRequest) {
   if (folder !== "strings" && folder !== "racquets") return bad("Invalid folder");
   if (!id) return bad("Missing id");
 
-  const supabase = createAdminClient();
+  // Upload raw bytes directly to Storage. Passing a Uint8Array body guarantees
+  // binary integrity (the JS client's Buffer path was UTF-8-mangling the JPEG).
+  const SUPA = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+  const KEY = process.env.SUPABASE_SERVICE_ROLE_KEY!;
   const path = `${folder}/${id}.jpg`;
-  const { error } = await supabase.storage.from("catalog").upload(path, buf, {
-    contentType: "image/jpeg",
-    upsert: true,
+  const up = await fetch(`${SUPA}/storage/v1/object/catalog/${path}`, {
+    method: "POST",
+    headers: {
+      apikey: KEY,
+      Authorization: `Bearer ${KEY}`,
+      "Content-Type": "image/jpeg",
+      "x-upsert": "true",
+      "Cache-Control": "max-age=3600",
+    },
+    body: new Uint8Array(buf),
   });
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (!up.ok) {
+    return NextResponse.json(
+      { error: `Storage upload failed (${up.status})` },
+      { status: 500 }
+    );
+  }
 
-  const { data } = supabase.storage.from("catalog").getPublicUrl(path);
-  return NextResponse.json({ url: `${data.publicUrl}?v=${Date.now()}` });
+  const publicUrl = `${SUPA}/storage/v1/object/public/catalog/${path}`;
+  return NextResponse.json({ url: `${publicUrl}?v=${Date.now()}` });
 }

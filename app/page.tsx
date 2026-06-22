@@ -274,29 +274,29 @@ export default async function Home() {
                 </div>
               </Reveal>
             ) : (
-              <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              <div className="mt-10 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
                 {strings.map((s, i) => {
                   const sub = [s.brand, s.gauge, s.color]
                     .filter(Boolean)
                     .join(" · ");
                   return (
-                    <Reveal key={s.id} delay={(i % 3) * 80} className="h-full">
-                      <div className="flex h-full flex-col rounded-2xl border border-line bg-paper p-5 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-md">
+                    <Reveal key={s.id} delay={(i % 4) * 70} className="h-full">
+                      <div className="flex h-full flex-col rounded-2xl border border-line bg-paper p-4 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-md">
                         {s.photoUrl && (
                           // eslint-disable-next-line @next/next/no-img-element
                           <img
                             src={s.photoUrl}
                             alt={s.name}
-                            className="mb-3 aspect-square w-full rounded-lg border border-line object-contain"
+                            className="mb-2.5 aspect-square w-full rounded-lg border border-line object-contain"
                           />
                         )}
-                        <h3 className="font-display text-base font-semibold text-ink">
+                        <h3 className="font-display text-sm font-semibold text-ink">
                           {s.name}
                         </h3>
                         {sub && (
-                          <p className="mt-1 text-sm text-stone">{sub}</p>
+                          <p className="mt-1 text-xs text-stone">{sub}</p>
                         )}
-                        <span className="mt-4 inline-flex w-fit items-center rounded-full bg-court-tint px-3 py-1 text-sm font-medium text-court">
+                        <span className="mt-3 inline-flex w-fit items-center rounded-full bg-court-tint px-2.5 py-0.5 text-xs font-medium text-court">
                           {formatCents(s.priceCents)}
                         </span>
                       </div>
