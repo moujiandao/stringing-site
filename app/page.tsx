@@ -97,9 +97,9 @@ export default async function Home() {
 
             <Reveal delay={160}>
               <p className="mt-6 max-w-xl text-lg leading-relaxed text-stone">
-                I come to you. Drop off and pick up at one of 3 convenient
-                East Bay meetup spots, get a fast turnaround, and pay in person.
-                Wholesale strings mean you pay less.
+                Serving tennis players across the Bay Area. I come to you — drop
+                off and pick up at one of 3 convenient meetup spots, get a fast
+                turnaround, and pay in person. Wholesale strings mean you pay less.
               </p>
             </Reveal>
 
