@@ -65,7 +65,7 @@ function StringsSection({ items, reload }: { items: StringItem[]; reload: () => 
 
   async function save(s: StringItem, patch: Partial<StringItem>) {
     const next = { ...s, ...patch };
-    await sb()
+    const { error } = await sb()
       .from("string_catalog")
       .update({
         name: next.name,
@@ -77,6 +77,10 @@ function StringsSection({ items, reload }: { items: StringItem[]; reload: () => 
         in_stock: next.inStock,
       })
       .eq("id", s.id);
+    if (error) {
+      alert(`Couldn't save: ${error.message}`);
+      return;
+    }
     reload();
   }
 
@@ -176,7 +180,7 @@ function RacquetsSection({ items, reload }: { items: RacquetForSale[]; reload: (
 
   async function save(r: RacquetForSale, patch: Partial<RacquetForSale>) {
     const next = { ...r, ...patch };
-    await sb()
+    const { error } = await sb()
       .from("racquets_for_sale")
       .update({
         name: next.name,
@@ -187,6 +191,10 @@ function RacquetsSection({ items, reload }: { items: RacquetForSale[]; reload: (
         in_stock: next.inStock,
       })
       .eq("id", r.id);
+    if (error) {
+      alert(`Couldn't save: ${error.message}`);
+      return;
+    }
     reload();
   }
 
