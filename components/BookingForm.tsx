@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { rowToHub, rowToString } from "@/lib/mappers";
-import { SERVICES, SERVICE_TYPES, WEEKDAYS, DAY_PARTS, formatCents } from "@/lib/constants";
+import { SERVICES, SERVICE_TYPES, WEEKDAYS, DAY_PARTS, formatCents, quoteCents } from "@/lib/constants";
 import type { Hub, StringItem, ServiceType, AvailabilityWindow, Weekday, DayPart } from "@/lib/types";
 
 const NONE = "__none__";
@@ -32,7 +32,8 @@ export default function BookingForm() {
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [serviceType, setServiceType] = useState<ServiceType>("byo_string");
-  const [stringId, setStringId] = useState("");
+  const [stringId, setStringId] = useState(""); // full_service string, or hybrid mains
+  const [crossesStringId, setCrossesStringId] = useState(""); // hybrid crosses
   const [gripQty, setGripQty] = useState(1);
   const [racquetLabel, setRacquetLabel] = useState("");
   const [hubId, setHubId] = useState("");
@@ -83,6 +84,8 @@ export default function BookingForm() {
   }
   function next2() {
     if (serviceType === "full_service" && !stringId) return setError("Pick a string for full service.");
+    if (serviceType === "hybrid" && (!stringId || !crossesStringId))
+      return setError("Pick both a mains and a crosses string.");
     advance(3);
   }
   function next3() {
@@ -113,6 +116,8 @@ export default function BookingForm() {
 
     if (!name.trim() || !email.trim()) return setError("Name and email are required.");
     if (serviceType === "full_service" && !stringId) return setError("Pick a string for full service.");
+    if (serviceType === "hybrid" && (!stringId || !crossesStringId))
+      return setError("Pick both a mains and a crosses string.");
     if (!hubId) return setError("Pick a meetup spot (or 'none near me').");
     if (days.size === 0 || times.size === 0)
       return setError("Pick at least one day and one time window.");
@@ -131,7 +136,8 @@ export default function BookingForm() {
           customerEmail: email,
           customerPhone: phone,
           serviceType,
-          stringId: serviceType === "full_service" ? stringId : null,
+          stringId: serviceType === "full_service" || serviceType === "hybrid" ? stringId : null,
+          crossesStringId: serviceType === "hybrid" ? crossesStringId : null,
           gripQty: serviceType === "regrip" ? gripQty : 0,
           racquetLabel,
           notes,
@@ -184,6 +190,25 @@ export default function BookingForm() {
   const mapQuery = selectedQuery || "San Francisco Bay Area, CA";
   const mapZoom = selectedQuery ? 15 : 9;
 
+  const strLabel = (s: StringItem) =>
+    `${s.name}${s.color ? `, ${s.color}` : ""} ${s.gauge ? `(${s.gauge})` : ""} — ${formatCents(s.priceCents)}`;
+  const mainsString = strings.find((s) => s.id === stringId) ?? null;
+  const crossesString = strings.find((s) => s.id === crossesStringId) ?? null;
+  const estimate = quoteCents(serviceType, {
+    stringPriceCents: mainsString?.priceCents,
+    mainsPriceCents: mainsString?.priceCents,
+    crossesPriceCents: crossesString?.priceCents,
+  });
+  const laborCents = SERVICES[serviceType].laborCents;
+  const estimateNote =
+    serviceType === "full_service"
+      ? `${formatCents(laborCents)} labor${mainsString ? ` + ${formatCents(mainsString.priceCents)} string` : " + string"}`
+      : serviceType === "hybrid"
+        ? `${formatCents(laborCents)} labor + half of each string`
+        : serviceType === "regrip"
+          ? `${formatCents(laborCents)} flat — overgrip included`
+          : `${formatCents(laborCents)} labor — you bring the string`;
+
   return (
     <form onSubmit={submit} className="space-y-5">
       {/* Step 1 — Your info */}
@@ -223,7 +248,7 @@ export default function BookingForm() {
       {step >= 2 && (
         <fieldset ref={ref2} className={`${card} step-in`}>
           <StepHead n={2} title="Service" />
-          <div className="mt-4 grid gap-2 sm:grid-cols-3">
+          <div className="mt-4 grid gap-2 sm:grid-cols-2">
             {SERVICE_TYPES.map((t) => (
               <label
                 key={t}
@@ -254,11 +279,44 @@ export default function BookingForm() {
                 <option value="">Select a string…</option>
                 {strings.map((s) => (
                   <option key={s.id} value={s.id}>
-                    {s.name}
-                    {s.color ? `, ${s.color}` : ""} {s.gauge ? `(${s.gauge})` : ""} — {formatCents(s.priceCents)}
+                    {strLabel(s)}
                   </option>
                 ))}
               </select>
+            </div>
+          )}
+
+          {serviceType === "hybrid" && (
+            <div className="mt-4 grid gap-4 sm:grid-cols-2">
+              <div className="space-y-1.5">
+                <label className={label}>Mains string</label>
+                <select className={field} value={stringId} onChange={(e) => setStringId(e.target.value)}>
+                  <option value="">Select…</option>
+                  {strings.map((s) => (
+                    <option key={s.id} value={s.id}>
+                      {strLabel(s)}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="space-y-1.5">
+                <label className={label}>Crosses string</label>
+                <select
+                  className={field}
+                  value={crossesStringId}
+                  onChange={(e) => setCrossesStringId(e.target.value)}
+                >
+                  <option value="">Select…</option>
+                  {strings.map((s) => (
+                    <option key={s.id} value={s.id}>
+                      {strLabel(s)}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <p className="text-xs text-stone sm:col-span-2">
+                Each string is charged at half its price for a hybrid.
+              </p>
             </div>
           )}
 
@@ -274,6 +332,15 @@ export default function BookingForm() {
               />
             </div>
           )}
+
+          <div className="mt-4 flex items-center justify-between rounded-lg border border-court/30 bg-court-tint/50 px-4 py-3">
+            <div>
+              <p className="text-sm font-medium text-ink">Estimated total</p>
+              <p className="text-xs text-stone">{estimateNote} · paid in person</p>
+            </div>
+            <span className="font-display text-xl font-semibold text-ink">{formatCents(estimate)}</span>
+          </div>
+
           {step === 2 && (
             <button type="button" onClick={next2} className={continueBtn}>
               Continue →

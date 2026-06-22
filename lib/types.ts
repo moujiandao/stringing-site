@@ -5,7 +5,8 @@
 // =====================================================================
 
 // --- Service catalog ---------------------------------------------------
-export type ServiceType = "byo_string" | "full_service" | "regrip";
+// hybrid = different string on mains vs. crosses (each charged at half price).
+export type ServiceType = "byo_string" | "full_service" | "hybrid" | "regrip";
 
 // --- Booking lifecycle -------------------------------------------------
 // 'stringing' is intentionally collapsed into 'picked_up' for v1.
@@ -91,7 +92,8 @@ export interface Booking {
   customerEmail: string;
   customerPhone: string | null;
   serviceType: ServiceType;
-  stringId: string | null; // required iff full_service
+  stringId: string | null; // full_service: the string; hybrid: the mains string
+  crossesStringId: string | null; // hybrid: the crosses string
   gripQty: number; // for regrip
   racquetLabel: string | null;
   notes: string | null;
@@ -128,7 +130,8 @@ export interface BookingSubmission {
   customerEmail: string;
   customerPhone?: string;
   serviceType: ServiceType;
-  stringId?: string | null;
+  stringId?: string | null; // full_service string, or hybrid mains
+  crossesStringId?: string | null; // hybrid crosses
   gripQty?: number;
   racquetLabel?: string;
   notes?: string;

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { SERVICES, WEEKDAYS, DAY_PARTS } from "@/lib/constants";
+import { SERVICES, WEEKDAYS, DAY_PARTS, quoteCents } from "@/lib/constants";
 import { sendWithDedup } from "@/lib/email/dispatch";
 import { newBookingOwner } from "@/lib/email/templates";
 import type { BookingSubmission } from "@/lib/types";
@@ -24,27 +24,45 @@ export async function POST(req: NextRequest) {
 
   const supabase = createAdminClient();
   const svc = SERVICES[serviceType];
-  let priceQuote = svc.laborCents;
   let stringId: string | null = null;
+  let crossesStringId: string | null = null;
+  let mainsPriceCents: number | null = null;
+  let crossesPriceCents: number | null = null;
 
-  if (serviceType === "full_service") {
+  const fetchStr = (id: string) =>
+    supabase.from("string_catalog").select("id, price_cents, in_stock, active").eq("id", id).maybeSingle();
+
+  // full_service + hybrid: validate the (mains) string.
+  if (serviceType === "full_service" || serviceType === "hybrid") {
     if (!body.stringId) {
-      return NextResponse.json({ error: "Pick a string for full service" }, { status: 400 });
+      return NextResponse.json(
+        { error: serviceType === "hybrid" ? "Pick a mains string" : "Pick a string" },
+        { status: 400 }
+      );
     }
-    const { data: str } = await supabase
-      .from("string_catalog")
-      .select("id, price_cents, in_stock, active")
-      .eq("id", body.stringId)
-      .maybeSingle();
-    if (!str || !str.active) {
-      return NextResponse.json({ error: "That string isn't available" }, { status: 400 });
-    }
-    if (!str.in_stock) {
+    const { data: m } = await fetchStr(body.stringId);
+    if (!m || !m.active) return NextResponse.json({ error: "That string isn't available" }, { status: 400 });
+    if (!m.in_stock)
       return NextResponse.json({ error: "That string just sold out — please pick another" }, { status: 409 });
-    }
-    stringId = str.id;
-    priceQuote += str.price_cents;
+    stringId = m.id;
+    mainsPriceCents = m.price_cents;
   }
+
+  // hybrid: also validate the crosses string.
+  if (serviceType === "hybrid") {
+    if (!body.crossesStringId) {
+      return NextResponse.json({ error: "Pick a crosses string" }, { status: 400 });
+    }
+    const { data: c } = await fetchStr(body.crossesStringId);
+    if (!c || !c.active) return NextResponse.json({ error: "That crosses string isn't available" }, { status: 400 });
+    if (!c.in_stock)
+      return NextResponse.json({ error: "That crosses string just sold out — please pick another" }, { status: 409 });
+    crossesStringId = c.id;
+    crossesPriceCents = c.price_cents;
+  }
+
+  // Same pricing function the booking form uses for its live estimate.
+  const priceQuote = quoteCents(serviceType, { stringPriceCents: mainsPriceCents, mainsPriceCents, crossesPriceCents });
 
   const outOfRange = Boolean(body.outOfRange);
   const hubId = outOfRange ? null : body.hubId ?? null;
@@ -60,6 +78,7 @@ export async function POST(req: NextRequest) {
       customer_phone: body.customerPhone?.trim() || null,
       service_type: serviceType,
       string_id: stringId,
+      crosses_string_id: crossesStringId,
       grip_qty: serviceType === "regrip" ? body.gripQty ?? 1 : 0,
       racquet_label: body.racquetLabel?.trim() || null,
       notes: body.notes?.trim() || null,
@@ -102,7 +121,17 @@ export async function POST(req: NextRequest) {
     let stringName: string | null = null;
     if (stringId) {
       const { data: st } = await supabase.from("string_catalog").select("name").eq("id", stringId).maybeSingle();
-      stringName = st?.name ?? null;
+      const mainsName = st?.name ?? null;
+      if (serviceType === "hybrid" && crossesStringId) {
+        const { data: cs } = await supabase
+          .from("string_catalog")
+          .select("name")
+          .eq("id", crossesStringId)
+          .maybeSingle();
+        stringName = `${mainsName ?? "?"} (mains) / ${cs?.name ?? "?"} (crosses)`;
+      } else {
+        stringName = mainsName;
+      }
     }
     const uniqDays = [...new Set(windows.map((w) => w.weekday))];
     const uniqTimes = [...new Set(windows.map((w) => w.dayPart))];

@@ -185,7 +185,7 @@ export default async function Home() {
           </Reveal>
 
           <div className="mt-10 grid gap-5 sm:grid-cols-3">
-            {SERVICE_TYPES.map((t, i) => {
+            {SERVICE_TYPES.filter((t) => t !== "hybrid").map((t, i) => {
               const s = SERVICES[t];
               const sublabel = s.priceNote;
               const popular = t === "full_service";

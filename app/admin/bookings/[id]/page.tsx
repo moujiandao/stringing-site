@@ -16,13 +16,16 @@ export default async function BookingDetail({ params }: { params: Promise<{ id: 
   }
   const booking = rowToBooking(row);
 
-  const [{ data: hubRow }, { data: availRows }, { data: strRow }] = await Promise.all([
+  const [{ data: hubRow }, { data: availRows }, { data: strRow }, { data: crossRow }] = await Promise.all([
     booking.hubId
       ? supabase.from("hubs").select("*").eq("id", booking.hubId).maybeSingle()
       : Promise.resolve({ data: null }),
     supabase.from("booking_availability").select("*").eq("booking_id", id),
     booking.stringId
       ? supabase.from("string_catalog").select("name").eq("id", booking.stringId).maybeSingle()
+      : Promise.resolve({ data: null }),
+    booking.crossesStringId
+      ? supabase.from("string_catalog").select("name").eq("id", booking.crossesStringId).maybeSingle()
       : Promise.resolve({ data: null }),
   ]);
 
@@ -64,7 +67,11 @@ export default async function BookingDetail({ params }: { params: Promise<{ id: 
           <dt className="text-zinc-500">Service</dt>
           <dd>
             {SERVICES[booking.serviceType].label}
-            {strRow?.name ? ` · ${strRow.name}` : ""}
+            {booking.serviceType === "hybrid"
+              ? ` · ${strRow?.name ?? "?"} (mains) / ${crossRow?.name ?? "?"} (crosses)`
+              : strRow?.name
+                ? ` · ${strRow.name}`
+                : ""}
             {booking.gripQty ? ` · ${booking.gripQty} grip(s)` : ""}
           </dd>
         </div>

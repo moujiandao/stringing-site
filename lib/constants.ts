@@ -27,6 +27,14 @@ export const SERVICES: Record<
     needsString: true,
     needsGrip: false,
   },
+  hybrid: {
+    label: "Hybrid (two strings)",
+    laborCents: 2000,
+    blurb: "Different string on the mains and the crosses. $20 labor + half of each string.",
+    priceNote: "+ ½ of each string",
+    needsString: false,
+    needsGrip: false,
+  },
   regrip: {
     label: "Regrip",
     laborCents: 300,
@@ -38,6 +46,28 @@ export const SERVICES: Record<
 };
 
 export const SERVICE_TYPES = Object.keys(SERVICES) as ServiceType[];
+
+// Shared price quote (in cents). Used by BOTH the booking form (live estimate)
+// and the API (price_quote_cents) so the shown total and the saved quote match.
+// full_service: labor + string. hybrid: labor + half of each string. else: labor.
+export function quoteCents(
+  serviceType: ServiceType,
+  opts: {
+    stringPriceCents?: number | null;
+    mainsPriceCents?: number | null;
+    crossesPriceCents?: number | null;
+  } = {}
+): number {
+  const labor = SERVICES[serviceType].laborCents;
+  if (serviceType === "full_service") return labor + (opts.stringPriceCents ?? 0);
+  if (serviceType === "hybrid")
+    return (
+      labor +
+      Math.round((opts.mainsPriceCents ?? 0) / 2) +
+      Math.round((opts.crossesPriceCents ?? 0) / 2)
+    );
+  return labor; // byo_string, regrip
+}
 
 // --- Availability labels ----------------------------------------------
 export const WEEKDAYS: { value: Weekday; label: string; short: string }[] = [

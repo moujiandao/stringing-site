@@ -67,6 +67,7 @@ export function rowToBooking(r: any): Booking {
     customerPhone: r.customer_phone ?? null,
     serviceType: r.service_type as ServiceType,
     stringId: r.string_id ?? null,
+    crossesStringId: r.crosses_string_id ?? null,
     gripQty: r.grip_qty ?? 0,
     racquetLabel: r.racquet_label ?? null,
     notes: r.notes ?? null,
