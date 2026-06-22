@@ -269,5 +269,61 @@ export function ownerDigest({
   return { subject, html, text };
 }
 
+// --- Owner: new booking notification ----------------------------------
+export interface NewBookingOwnerData {
+  bookingId: string;
+  customerName: string;
+  customerEmail: string;
+  customerPhone: string | null;
+  serviceLabel: string;
+  stringName: string | null;
+  gripQty: number;
+  racquetLabel: string | null;
+  hubName: string;
+  priceCents: number | null;
+  daysText: string;
+  timesText: string;
+  notes: string | null;
+}
+
+export function newBookingOwner(o: NewBookingOwnerData): Tpl {
+  const adminUrl = `${SITE}/admin/bookings/${o.bookingId}`;
+  const subject = `New booking — ${o.customerName} (${o.serviceLabel})`;
+
+  const rows: [string, string][] = [
+    ["Customer", `${o.customerName} · ${o.customerEmail}${o.customerPhone ? ` · ${o.customerPhone}` : ""}`],
+    [
+      "Service",
+      `${o.serviceLabel}${o.stringName ? ` · ${o.stringName}` : ""}${o.gripQty ? ` · ${o.gripQty} grip(s)` : ""}`,
+    ],
+    ["Racquet", o.racquetLabel || "—"],
+    ["Meetup", o.hubName],
+    ["Days", o.daysText || "—"],
+    ["Times", o.timesText || "—"],
+    ["Quote", o.priceCents != null ? formatCents(o.priceCents) : "—"],
+  ];
+  if (o.notes) rows.push(["Notes", o.notes]);
+
+  const rowHtml = rows
+    .map(
+      ([k, v]) =>
+        `<tr><td style="padding:4px 12px 4px 0;color:#888;vertical-align:top">${esc(k)}</td><td style="padding:4px 0">${esc(v)}</td></tr>`
+    )
+    .join("");
+
+  const html = layout(
+    "New booking request",
+    `<p>A new booking just came in — review and accept it to start scheduling.</p>
+     <table style="border-collapse:collapse;font-size:14px">${rowHtml}</table>
+     ${btn(adminUrl, "Review & accept")}`
+  );
+  const text = textBody([
+    "New booking request:",
+    ...rows.map(([k, v]) => `${k}: ${v}`),
+    `Review & accept: ${adminUrl}`,
+  ]);
+  return { subject, html, text };
+}
+
 // Re-export for callers that map a status to a label in emails.
 export { STATUS_LABELS };

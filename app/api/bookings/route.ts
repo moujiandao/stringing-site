@@ -1,11 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { SERVICES } from "@/lib/constants";
+import { SERVICES, WEEKDAYS, DAY_PARTS } from "@/lib/constants";
+import { sendWithDedup } from "@/lib/email/dispatch";
+import { newBookingOwner } from "@/lib/email/templates";
 import type { BookingSubmission } from "@/lib/types";
 
 // Public booking submit. Runs as service role (anon has no access to bookings).
 // Validates, snapshots the price, and inserts the booking + availability windows.
-// No email here — the confirmation fires when the owner accepts the booking.
+// No customer email here (confirmation fires on owner accept) — but the owner
+// gets a "new booking" notification.
 export async function POST(req: NextRequest) {
   let body: BookingSubmission;
   try {
@@ -86,6 +89,48 @@ export async function POST(req: NextRequest) {
         { status: 500 }
       );
     }
+  }
+
+  // Notify the owner of the new booking (best-effort; never blocks the response).
+  const ownerEmail = process.env.OWNER_EMAIL;
+  if (ownerEmail) {
+    let hubName = outOfRange ? "Out of range — none nearby" : "—";
+    if (hubId) {
+      const { data: h } = await supabase.from("hubs").select("name").eq("id", hubId).maybeSingle();
+      if (h?.name) hubName = h.name;
+    }
+    let stringName: string | null = null;
+    if (stringId) {
+      const { data: st } = await supabase.from("string_catalog").select("name").eq("id", stringId).maybeSingle();
+      stringName = st?.name ?? null;
+    }
+    const uniqDays = [...new Set(windows.map((w) => w.weekday))];
+    const uniqTimes = [...new Set(windows.map((w) => w.dayPart))];
+    const daysText = uniqDays.map((d) => WEEKDAYS.find((x) => x.value === d)?.short ?? String(d)).join(", ");
+    const timesText = uniqTimes.map((t) => DAY_PARTS.find((x) => x.value === t)?.label ?? String(t)).join(", ");
+
+    const tpl = newBookingOwner({
+      bookingId: booking.id,
+      customerName: customerName.trim(),
+      customerEmail: customerEmail.trim(),
+      customerPhone: body.customerPhone?.trim() || null,
+      serviceLabel: svc.label,
+      stringName,
+      gripQty: serviceType === "regrip" ? body.gripQty ?? 1 : 0,
+      racquetLabel: body.racquetLabel?.trim() || null,
+      hubName,
+      priceCents: priceQuote,
+      daysText,
+      timesText,
+      notes: body.notes?.trim() || null,
+    });
+    await sendWithDedup(supabase, {
+      bookingId: booking.id,
+      kind: "new_booking_owner",
+      to: ownerEmail,
+      dedupKey: `new_booking_owner:${booking.id}`,
+      ...tpl,
+    });
   }
 
   return NextResponse.json({ publicToken: booking.public_token });
