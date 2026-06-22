@@ -204,7 +204,9 @@ export default function BookingForm() {
     serviceType === "full_service"
       ? `${formatCents(laborCents)} labor${mainsString ? ` + ${formatCents(mainsString.priceCents)} string` : " + string"}`
       : serviceType === "hybrid"
-        ? `${formatCents(laborCents)} labor + half of each string`
+        ? mainsString && crossesString
+          ? `${formatCents(laborCents)} labor + ${formatCents(Math.round(mainsString.priceCents / 2))} mains + ${formatCents(Math.round(crossesString.priceCents / 2))} crosses (½ each)`
+          : `${formatCents(laborCents)} labor + half of each string`
         : serviceType === "regrip"
           ? `${formatCents(laborCents)} flat — overgrip included`
           : `${formatCents(laborCents)} labor — you bring the string`;
