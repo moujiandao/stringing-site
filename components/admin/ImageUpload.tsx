@@ -129,9 +129,11 @@ export default function ImageUpload({
             .find((it) => it.kind === "file")
             ?.getAsFile();
           if (itemFile && itemFile.type.startsWith("image/")) return void handleFile(itemFile);
-          // 3) a URL dragged from another browser/tab
+          // 3) a URL dragged from another browser/tab. Prefer the actual <img src>
+          // from the dragged HTML — a plain uri-list is often the *page* URL.
+          const fromHtml = imgSrcFromHtml(dt.getData("text/html"));
           const uri = (dt.getData("text/uri-list") || dt.getData("text/plain") || "").trim();
-          const url = uri || imgSrcFromHtml(dt.getData("text/html"));
+          const url = fromHtml || uri;
           if (url) return void handleUrl(url);
           setErr("Couldn't read that. Save the image, then click to pick it.");
         }}

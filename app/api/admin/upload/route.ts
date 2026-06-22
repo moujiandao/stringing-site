@@ -7,16 +7,41 @@ export const runtime = "nodejs";
 
 // Owner-authenticated image upload. Two input modes:
 //  - multipart file (from Finder / client), or
-//  - JSON { sourceUrl } when an image is dragged in from another browser —
-//    the server fetches it (no CORS) and sharp-resizes to the uniform square.
-// Stored in the public `catalog` bucket (service role bypasses Storage RLS).
+//  - JSON { sourceUrl } when an image is dragged from another browser. If the
+//    URL turns out to be a web page, we extract the real image (og:image / first
+//    <img>) and fetch that. Resized to a uniform square via sharp and stored in
+//    the public `catalog` bucket (service role bypasses Storage RLS).
 const PAPER = { r: 255, g: 253, b: 249, alpha: 1 };
+const UA =
+  "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124 Safari/537.36";
 
 async function squareJpeg(input: Buffer): Promise<Buffer> {
-  return sharp(input)
-    .resize(600, 600, { fit: "contain", background: PAPER })
-    .jpeg({ quality: 85 })
-    .toBuffer();
+  return sharp(input).resize(600, 600, { fit: "contain", background: PAPER }).jpeg({ quality: 85 }).toBuffer();
+}
+
+function fetchImage(url: string, referer: string): Promise<Response> {
+  return fetch(url, {
+    headers: {
+      "User-Agent": UA,
+      Accept: "image/avif,image/webp,image/apng,image/*,*/*;q=0.8",
+      ...(referer ? { Referer: referer } : {}),
+    },
+    redirect: "follow",
+  });
+}
+
+// Pull a real image URL out of an HTML page (og:image / twitter:image / first <img>).
+function extractImageUrl(html: string): string {
+  const metas = [
+    /<meta[^>]+(?:property|name)=["'](?:og:image(?::secure_url)?|twitter:image)["'][^>]*content=["']([^"']+)["']/i,
+    /<meta[^>]+content=["']([^"']+)["'][^>]*(?:property|name)=["'](?:og:image(?::secure_url)?|twitter:image)["']/i,
+  ];
+  for (const re of metas) {
+    const m = html.match(re);
+    if (m) return m[1];
+  }
+  const img = html.match(/<img[^>]+src=["']([^"']+)["']/i);
+  return img ? img[1] : "";
 }
 
 const bad = (msg: string) => NextResponse.json({ error: msg }, { status: 400 });
@@ -54,27 +79,41 @@ export async function POST(req: NextRequest) {
 
     let r: Response;
     try {
-      r = await fetch(sourceUrl, {
-        headers: {
-          "User-Agent":
-            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124 Safari/537.36",
-          Accept: "image/avif,image/webp,image/apng,image/*,*/*;q=0.8",
-          ...(referer ? { Referer: referer } : {}),
-        },
-        redirect: "follow",
-      });
+      r = await fetchImage(sourceUrl, referer);
     } catch (e) {
       return bad(`Couldn't reach it: ${e instanceof Error ? e.message : "network error"}`);
     }
     if (!r.ok) return bad(`Image host returned ${r.status}`);
 
-    const raw = Buffer.from(await r.arrayBuffer());
+    let raw = Buffer.from(await r.arrayBuffer());
+    let ct = r.headers.get("content-type") || "";
+
+    // Landed on a web page → dig out the real image and fetch it.
+    if (ct.includes("text/html")) {
+      const imgUrl = extractImageUrl(raw.toString("utf8"));
+      if (!imgUrl) return bad("That page had no clear image — drag the image itself");
+      let abs: string;
+      try {
+        abs = new URL(imgUrl, sourceUrl).href;
+      } catch {
+        return bad("Found an unreadable image link on that page");
+      }
+      let r2: Response;
+      try {
+        r2 = await fetchImage(abs, referer);
+      } catch (e) {
+        return bad(`Couldn't reach the image: ${e instanceof Error ? e.message : "network error"}`);
+      }
+      if (!r2.ok) return bad(`Image returned ${r2.status}`);
+      raw = Buffer.from(await r2.arrayBuffer());
+      ct = r2.headers.get("content-type") || "";
+    }
+
     if (raw.length === 0) return bad("Fetched an empty file");
     try {
       buf = await squareJpeg(raw);
     } catch {
-      const ct = r.headers.get("content-type") || "unknown";
-      return bad(`Got ${raw.length}B (${ct}) — not a decodable image`);
+      return bad(`Got ${raw.length}B (${ct || "unknown"}) — not a decodable image`);
     }
   } else {
     const form = await req.formData();
