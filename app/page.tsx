@@ -18,12 +18,8 @@ const STEPS = [
     body: "Hand off your racquet at a nearby spot — no storefront detour.",
   },
   {
-    title: "I string it",
-    body: "Quality job, fast turnaround. I'll let you know the moment it's ready.",
-  },
-  {
-    title: "Pick up & pay",
-    body: "Meet again near you and pay in person — cash, Venmo, or Zelle.",
+    title: "Pick up after 2–3 days",
+    body: "I string it with a fast, accurate job, then meet you again near you — pay in person by cash, Venmo, or Zelle.",
   },
 ];
 
@@ -127,7 +123,7 @@ export default async function Home() {
                   How it works
                 </h2>
               </Reveal>
-              <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              <div className="mt-6 grid gap-4 sm:grid-cols-3">
                 {STEPS.map((step, i) => (
                   <Reveal key={step.title} delay={i * 90}>
                     <div className="h-full rounded-2xl border border-line bg-paper/80 p-5 shadow-sm backdrop-blur-sm">
