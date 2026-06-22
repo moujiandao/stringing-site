@@ -31,7 +31,7 @@ export default function BookingForm() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
-  const [serviceType, setServiceType] = useState<ServiceType>("byo_string");
+  const [serviceType, setServiceType] = useState<ServiceType>("full_service");
   const [stringId, setStringId] = useState(""); // full_service string, or hybrid mains
   const [crossesStringId, setCrossesStringId] = useState(""); // hybrid crosses
   const [gripQty, setGripQty] = useState(1);
