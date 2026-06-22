@@ -156,7 +156,7 @@ export default function ImageUpload({
         className="hidden"
         onChange={(e) => handleFile(e.target.files?.[0])}
       />
-      {err && <p className="mt-1 max-w-16 text-[10px] text-red-600">{err}</p>}
+      {err && <p className="mt-1 w-44 text-[10px] leading-tight text-red-600">{err}</p>}
     </div>
   );
 }
