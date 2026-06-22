@@ -78,7 +78,9 @@ export async function POST(req: NextRequest) {
       customer_phone: body.customerPhone?.trim() || null,
       service_type: serviceType,
       string_id: stringId,
-      crosses_string_id: crossesStringId,
+      // Only reference the column for hybrid, so regular bookings keep working
+      // even before the crosses_string_id migration is applied.
+      ...(crossesStringId ? { crosses_string_id: crossesStringId } : {}),
       grip_qty: serviceType === "regrip" ? body.gripQty ?? 1 : 0,
       racquet_label: body.racquetLabel?.trim() || null,
       notes: body.notes?.trim() || null,
