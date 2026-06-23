@@ -47,6 +47,11 @@ export const SERVICES: Record<
 
 export const SERVICE_TYPES = Object.keys(SERVICES) as ServiceType[];
 
+// Selectable stringing tensions (lbs).
+export const TENSIONS = Array.from({ length: 26 }, (_, i) => 40 + i); // 40..65
+export const MIN_TENSION = 40;
+export const MAX_TENSION = 65;
+
 // Shared price quote (in cents). Used by BOTH the booking form (live estimate)
 // and the API (price_quote_cents) so the shown total and the saved quote match.
 // full_service: labor + string. hybrid: labor + half of each string. else: labor.

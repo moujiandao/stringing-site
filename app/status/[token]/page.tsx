@@ -142,6 +142,13 @@ export default async function StatusPage({ params }: { params: Promise<{ token: 
                     <span className="text-stone">
                       {" "}
                       · {SERVICES[r.serviceType].label}
+                      {r.serviceType === "hybrid"
+                        ? ` · ${r.mainsTension != null ? `${r.mainsTension}` : "rec"}/${
+                            r.crossesTension != null ? `${r.crossesTension}` : "rec"
+                          } lbs`
+                        : r.mainsTension != null
+                          ? ` · ${r.mainsTension} lbs`
+                          : " · rec. tension"}
                       {r.regrip ? " · + regrip" : ""}
                     </span>
                   </span>

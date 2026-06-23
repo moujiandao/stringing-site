@@ -12,6 +12,7 @@ import {
   formatCents,
   racquetQuoteCents,
   REGRIP_ADDON_CENTS,
+  TENSIONS,
 } from "@/lib/constants";
 import type { Hub, StringItem, StringingService, AvailabilityWindow, Weekday, DayPart } from "@/lib/types";
 
@@ -25,6 +26,8 @@ type RacquetUI = {
   serviceType: StringingService;
   stringId: string;
   crossesStringId: string;
+  mainsTension: string; // "" = go with recommended
+  crossesTension: string;
   regrip: boolean;
 };
 const emptyRacquet = (): RacquetUI => ({
@@ -32,6 +35,8 @@ const emptyRacquet = (): RacquetUI => ({
   serviceType: "full_service",
   stringId: "",
   crossesStringId: "",
+  mainsTension: "",
+  crossesTension: "",
   regrip: false,
 });
 
@@ -175,6 +180,8 @@ export default function BookingForm() {
             serviceType: r.serviceType,
             stringId: r.serviceType === "byo_string" ? null : r.stringId || null,
             crossesStringId: r.serviceType === "hybrid" ? r.crossesStringId || null : null,
+            mainsTension: r.mainsTension ? Number(r.mainsTension) : null,
+            crossesTension: r.serviceType === "hybrid" && r.crossesTension ? Number(r.crossesTension) : null,
             regrip: r.regrip,
           })),
           notes,
@@ -324,21 +331,56 @@ export default function BookingForm() {
                   ))}
                 </div>
 
-                {r.serviceType === "full_service" && (
-                  <div className="space-y-1.5">
-                    <label className={label}>String</label>
+                {r.serviceType === "byo_string" && (
+                  <div className="space-y-1.5 sm:max-w-xs">
+                    <label className={label}>Tension (lbs)</label>
                     <select
                       className={field}
-                      value={r.stringId}
-                      onChange={(e) => updateRacquet(i, { stringId: e.target.value })}
+                      value={r.mainsTension}
+                      onChange={(e) => updateRacquet(i, { mainsTension: e.target.value })}
                     >
-                      <option value="">Select a string…</option>
-                      {strings.map((s) => (
-                        <option key={s.id} value={s.id}>
-                          {strLabel(s)}
+                      <option value="">Go with recommended</option>
+                      {TENSIONS.map((t) => (
+                        <option key={t} value={t}>
+                          {t} lbs
                         </option>
                       ))}
                     </select>
+                  </div>
+                )}
+
+                {r.serviceType === "full_service" && (
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <div className="space-y-1.5">
+                      <label className={label}>String</label>
+                      <select
+                        className={field}
+                        value={r.stringId}
+                        onChange={(e) => updateRacquet(i, { stringId: e.target.value })}
+                      >
+                        <option value="">Select a string…</option>
+                        {strings.map((s) => (
+                          <option key={s.id} value={s.id}>
+                            {strLabel(s)}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className={label}>Tension (lbs)</label>
+                      <select
+                        className={field}
+                        value={r.mainsTension}
+                        onChange={(e) => updateRacquet(i, { mainsTension: e.target.value })}
+                      >
+                        <option value="">Go with recommended</option>
+                        {TENSIONS.map((t) => (
+                          <option key={t} value={t}>
+                            {t} lbs
+                          </option>
+                        ))}
+                      </select>
+                    </div>
                   </div>
                 )}
 
@@ -360,6 +402,21 @@ export default function BookingForm() {
                       </select>
                     </div>
                     <div className="space-y-1.5">
+                      <label className={label}>Mains tension (lbs)</label>
+                      <select
+                        className={field}
+                        value={r.mainsTension}
+                        onChange={(e) => updateRacquet(i, { mainsTension: e.target.value })}
+                      >
+                        <option value="">Go with recommended</option>
+                        {TENSIONS.map((t) => (
+                          <option key={t} value={t}>
+                            {t} lbs
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="space-y-1.5">
                       <label className={label}>Crosses string</label>
                       <select
                         className={field}
@@ -370,6 +427,21 @@ export default function BookingForm() {
                         {strings.map((s) => (
                           <option key={s.id} value={s.id}>
                             {strLabel(s)}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className={label}>Crosses tension (lbs)</label>
+                      <select
+                        className={field}
+                        value={r.crossesTension}
+                        onChange={(e) => updateRacquet(i, { crossesTension: e.target.value })}
+                      >
+                        <option value="">Go with recommended</option>
+                        {TENSIONS.map((t) => (
+                          <option key={t} value={t}>
+                            {t} lbs
                           </option>
                         ))}
                       </select>

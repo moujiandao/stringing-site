@@ -24,6 +24,8 @@ export interface BookingRacquet {
   crossesStringId: string | null; // hybrid crosses
   crossesName: string | null;
   crossesPriceCents: number | null;
+  mainsTension: number | null; // lbs; null = "go with recommended"
+  crossesTension: number | null; // lbs; hybrid only
   regrip: boolean; // +$3 add-on (your choice of overgrip)
   priceCents: number; // this racquet's line total (stringing + regrip)
 }
@@ -34,6 +36,8 @@ export interface RacquetInput {
   serviceType: StringingService;
   stringId?: string | null;
   crossesStringId?: string | null;
+  mainsTension?: number | null;
+  crossesTension?: number | null;
   regrip: boolean;
 }
 

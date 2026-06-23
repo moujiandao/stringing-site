@@ -274,6 +274,7 @@ export interface NewBookingOwnerRacquet {
   name: string;
   serviceLabel: string;
   strings: string; // "" for BYO, or "Tour Bite", or "X (mains) / Y (crosses)"
+  tension: string; // "52 lbs" / "recommended" / "52 lbs mains / 50 lbs crosses"
   regrip: boolean;
   priceCents: number;
 }
@@ -291,7 +292,7 @@ export interface NewBookingOwnerData {
 }
 
 function racquetLineText(r: NewBookingOwnerRacquet): string {
-  const bits = [r.serviceLabel, r.strings, r.regrip ? "+ regrip" : ""].filter(Boolean);
+  const bits = [r.serviceLabel, r.strings, `${r.tension} tension`, r.regrip ? "+ regrip" : ""].filter(Boolean);
   return `${r.name}: ${bits.join(" · ")} — ${formatCents(r.priceCents)}`;
 }
 

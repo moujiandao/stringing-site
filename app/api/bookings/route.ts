@@ -1,9 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { SERVICES, WEEKDAYS, DAY_PARTS, racquetQuoteCents } from "@/lib/constants";
+import { SERVICES, WEEKDAYS, DAY_PARTS, racquetQuoteCents, MIN_TENSION, MAX_TENSION } from "@/lib/constants";
 import { sendWithDedup } from "@/lib/email/dispatch";
 import { newBookingOwner } from "@/lib/email/templates";
 import type { BookingSubmission, BookingRacquet, StringingService } from "@/lib/types";
+
+// Valid tension (lbs) or null ("go with recommended").
+const cleanTension = (v: unknown): number | null => {
+  const n = typeof v === "number" ? v : Number(v);
+  return Number.isFinite(n) && n >= MIN_TENSION && n <= MAX_TENSION ? Math.round(n) : null;
+};
 
 // Public booking submit. Runs as service role (anon has no access to bookings).
 // Validates each racquet, snapshots names/prices, sums the quote, and inserts.
@@ -95,6 +101,8 @@ export async function POST(req: NextRequest) {
       crossesStringId,
       crossesName,
       crossesPriceCents,
+      mainsTension: cleanTension(r.mainsTension),
+      crossesTension: st === "hybrid" ? cleanTension(r.crossesTension) : null,
       regrip: Boolean(r.regrip),
       priceCents,
     });
@@ -175,6 +183,14 @@ export async function POST(req: NextRequest) {
           r.serviceType === "hybrid"
             ? `${r.stringName ?? "?"} (mains) / ${r.crossesName ?? "?"} (crosses)`
             : r.stringName ?? "",
+        tension:
+          r.serviceType === "hybrid"
+            ? `${r.mainsTension != null ? `${r.mainsTension} lbs` : "rec."} mains / ${
+                r.crossesTension != null ? `${r.crossesTension} lbs` : "rec."
+              } crosses`
+            : r.mainsTension != null
+              ? `${r.mainsTension} lbs`
+              : "recommended",
         regrip: r.regrip,
         priceCents: r.priceCents,
       })),

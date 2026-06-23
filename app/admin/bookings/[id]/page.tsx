@@ -70,6 +70,14 @@ export default async function BookingDetail({ params }: { params: Promise<{ id: 
                       : r.stringName
                         ? ` · ${r.stringName}`
                         : ""}
+                    {" · "}
+                    {r.serviceType === "hybrid"
+                      ? `${r.mainsTension != null ? `${r.mainsTension} lbs` : "rec."} mains / ${
+                          r.crossesTension != null ? `${r.crossesTension} lbs` : "rec."
+                        } crosses`
+                      : r.mainsTension != null
+                        ? `${r.mainsTension} lbs`
+                        : "rec. tension"}
                     {r.regrip ? " · + regrip" : ""}
                   </p>
                 </div>
