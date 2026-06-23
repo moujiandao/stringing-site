@@ -154,7 +154,13 @@ export async function POST(req: NextRequest) {
   }
 
   // Notify the owner (best-effort; never blocks the response).
-  const ownerEmail = process.env.OWNER_EMAIL;
+  // Address comes from the admin-editable settings, falling back to env.
+  const { data: ownerSetting } = await supabase
+    .from("settings")
+    .select("value")
+    .eq("key", "owner_email")
+    .maybeSingle();
+  const ownerEmail = ownerSetting?.value?.trim() || process.env.OWNER_EMAIL;
   if (ownerEmail) {
     let hubName = outOfRange ? "Out of range — none nearby" : "—";
     if (hubId) {

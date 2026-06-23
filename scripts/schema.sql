@@ -195,4 +195,18 @@ drop policy if exists email_log_admin_all on public.email_log;
 create policy email_log_admin_all on public.email_log
   for all to authenticated using (true) with check (true);
 
+-- ---------------------------------------------------------------------
+-- 8. settings — admin-editable key/value config (e.g. owner_email)
+--    Admin-only (anon has no access). The booking route reads via service role.
+-- ---------------------------------------------------------------------
+create table if not exists public.settings (
+  key        text primary key,
+  value      text,
+  updated_at timestamptz not null default now()
+);
+alter table public.settings enable row level security;
+drop policy if exists settings_admin_all on public.settings;
+create policy settings_admin_all on public.settings
+  for all to authenticated using (true) with check (true);
+
 commit;

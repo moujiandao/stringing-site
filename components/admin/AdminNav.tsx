@@ -9,6 +9,7 @@ const LINKS = [
   { href: "/admin/inventory", label: "Inventory" },
   { href: "/admin/hubs", label: "Hubs" },
   { href: "/admin/batches", label: "Batches" },
+  { href: "/admin/settings", label: "Settings" },
 ];
 
 export default function AdminNav() {
