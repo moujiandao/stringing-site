@@ -16,17 +16,11 @@ export default async function BookingDetail({ params }: { params: Promise<{ id: 
   }
   const booking = rowToBooking(row);
 
-  const [{ data: hubRow }, { data: availRows }, { data: strRow }, { data: crossRow }] = await Promise.all([
+  const [{ data: hubRow }, { data: availRows }] = await Promise.all([
     booking.hubId
       ? supabase.from("hubs").select("*").eq("id", booking.hubId).maybeSingle()
       : Promise.resolve({ data: null }),
     supabase.from("booking_availability").select("*").eq("booking_id", id),
-    booking.stringId
-      ? supabase.from("string_catalog").select("name").eq("id", booking.stringId).maybeSingle()
-      : Promise.resolve({ data: null }),
-    booking.crossesStringId
-      ? supabase.from("string_catalog").select("name").eq("id", booking.crossesStringId).maybeSingle()
-      : Promise.resolve({ data: null }),
   ]);
 
   const hub = hubRow ? rowToHub(hubRow) : null;
@@ -54,6 +48,38 @@ export default async function BookingDetail({ params }: { params: Promise<{ id: 
         </p>
       </div>
 
+      <div>
+        <h2 className="mb-2 text-sm font-semibold text-zinc-700">
+          Racquets{booking.racquets.length ? ` (${booking.racquets.length})` : ""}
+        </h2>
+        <div className="divide-y divide-zinc-200 rounded-lg border border-zinc-200 bg-white text-sm">
+          {booking.racquets.length === 0 ? (
+            <p className="px-4 py-3 text-zinc-500">
+              {(SERVICES[booking.serviceType]?.label ?? booking.serviceType)}
+              {booking.racquetLabel ? ` · ${booking.racquetLabel}` : ""}
+            </p>
+          ) : (
+            booking.racquets.map((r, i) => (
+              <div key={i} className="flex items-start justify-between gap-3 px-4 py-3">
+                <div>
+                  <p className="font-medium">{r.name || `Racquet ${i + 1}`}</p>
+                  <p className="text-zinc-500">
+                    {SERVICES[r.serviceType].label}
+                    {r.serviceType === "hybrid"
+                      ? ` · ${r.stringName ?? "?"} (mains) / ${r.crossesName ?? "?"} (crosses)`
+                      : r.stringName
+                        ? ` · ${r.stringName}`
+                        : ""}
+                    {r.regrip ? " · + regrip" : ""}
+                  </p>
+                </div>
+                <span className="font-medium">{formatCents(r.priceCents)}</span>
+              </div>
+            ))
+          )}
+        </div>
+      </div>
+
       <dl className="grid gap-3 rounded-lg border border-zinc-200 bg-white p-5 text-sm sm:grid-cols-2">
         <div>
           <dt className="text-zinc-500">Email</dt>
@@ -64,24 +90,8 @@ export default async function BookingDetail({ params }: { params: Promise<{ id: 
           <dd>{booking.customerPhone ?? "—"}</dd>
         </div>
         <div>
-          <dt className="text-zinc-500">Service</dt>
-          <dd>
-            {SERVICES[booking.serviceType].label}
-            {booking.serviceType === "hybrid"
-              ? ` · ${strRow?.name ?? "?"} (mains) / ${crossRow?.name ?? "?"} (crosses)`
-              : strRow?.name
-                ? ` · ${strRow.name}`
-                : ""}
-            {booking.gripQty ? ` · ${booking.gripQty} grip(s)` : ""}
-          </dd>
-        </div>
-        <div>
           <dt className="text-zinc-500">Quote</dt>
           <dd>{formatCents(booking.priceQuoteCents)}</dd>
-        </div>
-        <div>
-          <dt className="text-zinc-500">Racquet</dt>
-          <dd>{booking.racquetLabel ?? "—"}</dd>
         </div>
         <div>
           <dt className="text-zinc-500">Hub</dt>

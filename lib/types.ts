@@ -6,7 +6,36 @@
 
 // --- Service catalog ---------------------------------------------------
 // hybrid = different string on mains vs. crosses (each charged at half price).
+// regrip is no longer a standalone service — it's a per-racquet add-on — but the
+// SERVICES entry stays as the source of the $3 add-on price.
 export type ServiceType = "byo_string" | "full_service" | "hybrid" | "regrip";
+
+// The stringing services a racquet can have (regrip is an add-on, not a service).
+export type StringingService = Exclude<ServiceType, "regrip">;
+
+// One racquet in a booking. Stored as a snapshot in bookings.racquets (jsonb):
+// names/prices are captured at submit time so display needs no joins.
+export interface BookingRacquet {
+  name: string;
+  serviceType: StringingService;
+  stringId: string | null; // full_service: the string; hybrid: the mains
+  stringName: string | null;
+  stringPriceCents: number | null;
+  crossesStringId: string | null; // hybrid crosses
+  crossesName: string | null;
+  crossesPriceCents: number | null;
+  regrip: boolean; // +$3 add-on (your choice of overgrip)
+  priceCents: number; // this racquet's line total (stringing + regrip)
+}
+
+// What the booking form submits per racquet (server resolves names/prices).
+export interface RacquetInput {
+  name: string;
+  serviceType: StringingService;
+  stringId?: string | null;
+  crossesStringId?: string | null;
+  regrip: boolean;
+}
 
 // --- Booking lifecycle -------------------------------------------------
 // 'stringing' is intentionally collapsed into 'picked_up' for v1.
@@ -91,10 +120,12 @@ export interface Booking {
   customerName: string;
   customerEmail: string;
   customerPhone: string | null;
+  racquets: BookingRacquet[]; // source of truth for what's being strung
+  // Legacy single-racquet columns (kept for old bookings / list views).
   serviceType: ServiceType;
-  stringId: string | null; // full_service: the string; hybrid: the mains string
-  crossesStringId: string | null; // hybrid: the crosses string
-  gripQty: number; // for regrip
+  stringId: string | null;
+  crossesStringId: string | null;
+  gripQty: number;
   racquetLabel: string | null;
   notes: string | null;
   hubId: string | null;
@@ -129,11 +160,7 @@ export interface BookingSubmission {
   customerName: string;
   customerEmail: string;
   customerPhone?: string;
-  serviceType: ServiceType;
-  stringId?: string | null; // full_service string, or hybrid mains
-  crossesStringId?: string | null; // hybrid crosses
-  gripQty?: number;
-  racquetLabel?: string;
+  racquets: RacquetInput[];
   notes?: string;
   hubId?: string | null;
   outOfRange?: boolean;

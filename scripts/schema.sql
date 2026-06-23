@@ -125,6 +125,7 @@ create table if not exists public.bookings (
   customer_email    text not null,
   customer_phone    text,
   service_type      text not null,
+  racquets          jsonb not null default '[]',
   string_id         uuid references public.string_catalog(id) on delete set null,
   crosses_string_id uuid references public.string_catalog(id) on delete set null,
   grip_qty          int not null default 0,
@@ -147,8 +148,9 @@ alter table public.bookings enable row level security;
 drop policy if exists bookings_admin_all on public.bookings;
 create policy bookings_admin_all on public.bookings
   for all to authenticated using (true) with check (true);
--- Additive migration for existing databases (hybrid crosses string). Safe to re-run.
+-- Additive migrations for existing databases. Safe to re-run.
 alter table public.bookings add column if not exists crosses_string_id uuid references public.string_catalog(id) on delete set null;
+alter table public.bookings add column if not exists racquets jsonb not null default '[]';
 
 -- ---------------------------------------------------------------------
 -- 6. booking_availability — weekday x day_part windows (grouping signal)

@@ -65,6 +65,7 @@ export function rowToBooking(r: any): Booking {
     customerName: r.customer_name,
     customerEmail: r.customer_email,
     customerPhone: r.customer_phone ?? null,
+    racquets: Array.isArray(r.racquets) ? r.racquets : [],
     serviceType: r.service_type as ServiceType,
     stringId: r.string_id ?? null,
     crossesStringId: r.crosses_string_id ?? null,

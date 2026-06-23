@@ -1,6 +1,6 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { rowToBooking, rowToHub, rowToTripBatch } from "@/lib/mappers";
-import { STATUS_LABELS, DAY_PARTS, formatCents } from "@/lib/constants";
+import { STATUS_LABELS, DAY_PARTS, SERVICES, formatCents } from "@/lib/constants";
 import type { BookingStatus } from "@/lib/types";
 import SiteHeader from "@/components/site/SiteHeader";
 
@@ -130,6 +130,27 @@ export default async function StatusPage({ params }: { params: Promise<{ token: 
             </div>
           )}
         </div>
+
+        {booking.racquets.length > 0 && (
+          <div className="rounded-2xl border border-line bg-paper p-4 shadow-sm">
+            <p className="mb-2 text-sm font-medium text-stone">Racquets</p>
+            <ul className="divide-y divide-line text-sm">
+              {booking.racquets.map((r, i) => (
+                <li key={i} className="flex items-start justify-between gap-3 py-2">
+                  <span className="text-ink">
+                    <span className="font-medium">{r.name || `Racquet ${i + 1}`}</span>
+                    <span className="text-stone">
+                      {" "}
+                      · {SERVICES[r.serviceType].label}
+                      {r.regrip ? " · + regrip" : ""}
+                    </span>
+                  </span>
+                  <span className="text-stone">{formatCents(r.priceCents)}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
       </main>
     </div>
   );

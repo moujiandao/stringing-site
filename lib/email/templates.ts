@@ -270,40 +270,48 @@ export function ownerDigest({
 }
 
 // --- Owner: new booking notification ----------------------------------
+export interface NewBookingOwnerRacquet {
+  name: string;
+  serviceLabel: string;
+  strings: string; // "" for BYO, or "Tour Bite", or "X (mains) / Y (crosses)"
+  regrip: boolean;
+  priceCents: number;
+}
 export interface NewBookingOwnerData {
   bookingId: string;
   customerName: string;
   customerEmail: string;
   customerPhone: string | null;
-  serviceLabel: string;
-  stringName: string | null;
-  gripQty: number;
-  racquetLabel: string | null;
   hubName: string;
-  priceCents: number | null;
+  totalCents: number;
   daysText: string;
   timesText: string;
   notes: string | null;
+  racquets: NewBookingOwnerRacquet[];
+}
+
+function racquetLineText(r: NewBookingOwnerRacquet): string {
+  const bits = [r.serviceLabel, r.strings, r.regrip ? "+ regrip" : ""].filter(Boolean);
+  return `${r.name}: ${bits.join(" · ")} — ${formatCents(r.priceCents)}`;
 }
 
 export function newBookingOwner(o: NewBookingOwnerData): Tpl {
   const adminUrl = `${SITE}/admin/bookings/${o.bookingId}`;
-  const subject = `New booking — ${o.customerName} (${o.serviceLabel})`;
+  const n = o.racquets.length;
+  const subject = `New booking — ${o.customerName} (${n} racquet${n === 1 ? "" : "s"})`;
+
+  const racquetHtml = o.racquets
+    .map((r) => `<li style="margin:4px 0">${esc(racquetLineText(r))}</li>`)
+    .join("");
 
   const rows: [string, string][] = [
     ["Customer", `${o.customerName} · ${o.customerEmail}${o.customerPhone ? ` · ${o.customerPhone}` : ""}`],
-    [
-      "Service",
-      `${o.serviceLabel}${o.stringName ? ` · ${o.stringName}` : ""}${o.gripQty ? ` · ${o.gripQty} grip(s)` : ""}`,
-    ],
-    ["Racquet", o.racquetLabel || "—"],
     ["Meetup", o.hubName],
     ["Days", o.daysText || "—"],
     ["Times", o.timesText || "—"],
-    ["Quote", o.priceCents != null ? formatCents(o.priceCents) : "—"],
+    ["Total", formatCents(o.totalCents)],
   ];
   if (o.notes) rows.push(["Notes", o.notes]);
-
   const rowHtml = rows
     .map(
       ([k, v]) =>
@@ -314,11 +322,14 @@ export function newBookingOwner(o: NewBookingOwnerData): Tpl {
   const html = layout(
     "New booking request",
     `<p>A new booking just came in — review and accept it to start scheduling.</p>
+     <p style="margin:12px 0 4px;font-weight:600">Racquets</p>
+     <ul style="margin:0 0 12px;padding-left:18px;font-size:14px">${racquetHtml}</ul>
      <table style="border-collapse:collapse;font-size:14px">${rowHtml}</table>
      ${btn(adminUrl, "Review & accept")}`
   );
   const text = textBody([
     "New booking request:",
+    ...o.racquets.map(racquetLineText),
     ...rows.map(([k, v]) => `${k}: ${v}`),
     `Review & accept: ${adminUrl}`,
   ]);

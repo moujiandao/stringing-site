@@ -4,11 +4,36 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { rowToHub, rowToString } from "@/lib/mappers";
-import { SERVICES, SERVICE_TYPES, WEEKDAYS, DAY_PARTS, formatCents, quoteCents } from "@/lib/constants";
-import type { Hub, StringItem, ServiceType, AvailabilityWindow, Weekday, DayPart } from "@/lib/types";
+import {
+  SERVICES,
+  SERVICE_TYPES,
+  WEEKDAYS,
+  DAY_PARTS,
+  formatCents,
+  racquetQuoteCents,
+  REGRIP_ADDON_CENTS,
+} from "@/lib/constants";
+import type { Hub, StringItem, StringingService, AvailabilityWindow, Weekday, DayPart } from "@/lib/types";
 
 const NONE = "__none__";
 const TOTAL_STEPS = 4;
+// Stringing services a racquet can have (regrip is an add-on, not a service).
+const STRINGING_SERVICES = SERVICE_TYPES.filter((t) => t !== "regrip") as StringingService[];
+
+type RacquetUI = {
+  name: string;
+  serviceType: StringingService;
+  stringId: string;
+  crossesStringId: string;
+  regrip: boolean;
+};
+const emptyRacquet = (): RacquetUI => ({
+  name: "",
+  serviceType: "full_service",
+  stringId: "",
+  crossesStringId: "",
+  regrip: false,
+});
 
 function StepHead({ n, title }: { n: number; title: string }) {
   return (
@@ -31,17 +56,12 @@ export default function BookingForm() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
-  const [serviceType, setServiceType] = useState<ServiceType>("full_service");
-  const [stringId, setStringId] = useState(""); // full_service string, or hybrid mains
-  const [crossesStringId, setCrossesStringId] = useState(""); // hybrid crosses
-  const [gripQty, setGripQty] = useState(1);
-  const [racquetLabel, setRacquetLabel] = useState("");
+  const [racquets, setRacquets] = useState<RacquetUI[]>([emptyRacquet()]);
   const [hubId, setHubId] = useState("");
   const [notes, setNotes] = useState("");
   const [days, setDays] = useState<Set<Weekday>>(new Set());
   const [times, setTimes] = useState<Set<DayPart>>(new Set());
 
-  // Guided flow: `step` is the furthest-revealed step (1..TOTAL_STEPS).
   const [step, setStep] = useState(1);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -53,9 +73,9 @@ export default function BookingForm() {
 
   useEffect(() => {
     const svc = new URLSearchParams(window.location.search).get("service");
-    if (svc && (SERVICE_TYPES as readonly string[]).includes(svc)) {
+    if (svc && svc !== "regrip" && (STRINGING_SERVICES as readonly string[]).includes(svc)) {
       // eslint-disable-next-line react-hooks/set-state-in-effect
-      setServiceType(svc as ServiceType);
+      setRacquets((rs) => rs.map((r, i) => (i === 0 ? { ...r, serviceType: svc as StringingService } : r)));
     }
     const supabase = createClient();
     (async () => {
@@ -68,7 +88,6 @@ export default function BookingForm() {
     })();
   }, []);
 
-  // When a new step reveals, slide it into view (below the sticky nav).
   useEffect(() => {
     const refs: Record<number, React.RefObject<HTMLFieldSetElement | null>> = { 2: ref2, 3: ref3, 4: ref4 };
     if (step > 1) refs[step]?.current?.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -82,15 +101,32 @@ export default function BookingForm() {
     if (!name.trim() || !email.trim()) return setError("Name and email are required.");
     advance(2);
   }
+  function racquetsValid(): string | null {
+    for (const r of racquets) {
+      if (r.serviceType === "full_service" && !r.stringId) return "Pick a string for each Stringing racquet.";
+      if (r.serviceType === "hybrid" && (!r.stringId || !r.crossesStringId))
+        return "Pick both strings for each Hybrid racquet.";
+    }
+    return null;
+  }
   function next2() {
-    if (serviceType === "full_service" && !stringId) return setError("Pick a string for full service.");
-    if (serviceType === "hybrid" && (!stringId || !crossesStringId))
-      return setError("Pick both a mains and a crosses string.");
+    const err = racquetsValid();
+    if (err) return setError(err);
     advance(3);
   }
   function next3() {
     if (!hubId) return setError("Pick a meetup spot (or 'none near me').");
     advance(4);
+  }
+
+  function updateRacquet(i: number, patch: Partial<RacquetUI>) {
+    setRacquets((rs) => rs.map((r, idx) => (idx === i ? { ...r, ...patch } : r)));
+  }
+  function addRacquet() {
+    setRacquets((rs) => [...rs, emptyRacquet()]);
+  }
+  function removeRacquet(i: number) {
+    setRacquets((rs) => (rs.length > 1 ? rs.filter((_, idx) => idx !== i) : rs));
   }
 
   function toggleDay(w: Weekday) {
@@ -115,9 +151,8 @@ export default function BookingForm() {
     setError(null);
 
     if (!name.trim() || !email.trim()) return setError("Name and email are required.");
-    if (serviceType === "full_service" && !stringId) return setError("Pick a string for full service.");
-    if (serviceType === "hybrid" && (!stringId || !crossesStringId))
-      return setError("Pick both a mains and a crosses string.");
+    const rErr = racquetsValid();
+    if (rErr) return setError(rErr);
     if (!hubId) return setError("Pick a meetup spot (or 'none near me').");
     if (days.size === 0 || times.size === 0)
       return setError("Pick at least one day and one time window.");
@@ -135,11 +170,13 @@ export default function BookingForm() {
           customerName: name,
           customerEmail: email,
           customerPhone: phone,
-          serviceType,
-          stringId: serviceType === "full_service" || serviceType === "hybrid" ? stringId : null,
-          crossesStringId: serviceType === "hybrid" ? crossesStringId : null,
-          gripQty: serviceType === "regrip" ? gripQty : 0,
-          racquetLabel,
+          racquets: racquets.map((r) => ({
+            name: r.name.trim(),
+            serviceType: r.serviceType,
+            stringId: r.serviceType === "byo_string" ? null : r.stringId || null,
+            crossesStringId: r.serviceType === "hybrid" ? r.crossesStringId || null : null,
+            regrip: r.regrip,
+          })),
           notes,
           hubId: outOfRange ? null : hubId,
           outOfRange,
@@ -186,30 +223,24 @@ export default function BookingForm() {
       ? `${selectedHub.lat},${selectedHub.lng}`
       : selectedHub.description || selectedHub.name
     : null;
-  // Default to a Bay Area view so the map is always visible; zoom in once a hub is picked.
   const mapQuery = selectedQuery || "San Francisco Bay Area, CA";
   const mapZoom = selectedQuery ? 15 : 9;
 
   const strLabel = (s: StringItem) =>
     `${s.name}${s.color ? `, ${s.color}` : ""} ${s.gauge ? `(${s.gauge})` : ""} — ${formatCents(s.priceCents)}`;
-  const mainsString = strings.find((s) => s.id === stringId) ?? null;
-  const crossesString = strings.find((s) => s.id === crossesStringId) ?? null;
-  const estimate = quoteCents(serviceType, {
-    stringPriceCents: mainsString?.priceCents,
-    mainsPriceCents: mainsString?.priceCents,
-    crossesPriceCents: crossesString?.priceCents,
-  });
-  const laborCents = SERVICES[serviceType].laborCents;
-  const estimateNote =
-    serviceType === "full_service"
-      ? `${formatCents(laborCents)} labor${mainsString ? ` + ${formatCents(mainsString.priceCents)} string` : " + string"}`
-      : serviceType === "hybrid"
-        ? mainsString && crossesString
-          ? `${formatCents(laborCents)} labor + ${formatCents(Math.round(mainsString.priceCents / 2))} mains + ${formatCents(Math.round(crossesString.priceCents / 2))} crosses (½ each)`
-          : `${formatCents(laborCents)} labor + half of each string`
-        : serviceType === "regrip"
-          ? `${formatCents(laborCents)} flat — overgrip included`
-          : `${formatCents(laborCents)} labor — you bring the string`;
+
+  const racquetLine = (r: RacquetUI): number => {
+    const mains = strings.find((s) => s.id === r.stringId) ?? null;
+    const crosses = strings.find((s) => s.id === r.crossesStringId) ?? null;
+    return racquetQuoteCents({
+      serviceType: r.serviceType,
+      stringPriceCents: mains?.priceCents,
+      mainsPriceCents: mains?.priceCents,
+      crossesPriceCents: crosses?.priceCents,
+      regrip: r.regrip,
+    });
+  };
+  const estimate = racquets.reduce((sum, r) => sum + racquetLine(r), 0);
 
   return (
     <form onSubmit={submit} className="space-y-5">
@@ -225,18 +256,9 @@ export default function BookingForm() {
             <label className={label}>Email</label>
             <input className={field} type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
           </div>
-          <div className="space-y-1.5">
+          <div className="space-y-1.5 sm:col-span-2">
             <label className={label}>Phone (optional)</label>
             <input className={field} value={phone} onChange={(e) => setPhone(e.target.value)} />
-          </div>
-          <div className="space-y-1.5">
-            <label className={label}>Racquet (so I can ID it)</label>
-            <input
-              className={field}
-              value={racquetLabel}
-              onChange={(e) => setRacquetLabel(e.target.value)}
-              placeholder="e.g. Wilson Blade, blue dampener"
-            />
           </div>
         </div>
         {step === 1 && (
@@ -246,99 +268,147 @@ export default function BookingForm() {
         )}
       </fieldset>
 
-      {/* Step 2 — Service */}
+      {/* Step 2 — Racquets */}
       {step >= 2 && (
         <fieldset ref={ref2} className={`${card} step-in`}>
-          <StepHead n={2} title="Service" />
-          <div className="mt-4 grid gap-2 sm:grid-cols-2">
-            {SERVICE_TYPES.map((t) => (
-              <label
-                key={t}
-                className={`flex cursor-pointer items-center rounded-lg border p-3 text-sm transition ${
-                  serviceType === t
-                    ? "border-court bg-court-tint text-ink"
-                    : "border-line bg-paper text-ink hover:border-court/40"
-                }`}
-              >
-                <input
-                  type="radio"
-                  name="service"
-                  className="mr-2 accent-court"
-                  checked={serviceType === t}
-                  onChange={() => setServiceType(t)}
-                />
-                <span>
-                  {SERVICES[t].label} <span className="text-stone">— {formatCents(SERVICES[t].laborCents)}</span>
-                </span>
-              </label>
+          <StepHead n={2} title="Racquets" />
+
+          <div className="mt-4 space-y-4">
+            {racquets.map((r, i) => (
+              <div key={i} className="space-y-3 rounded-xl border border-line bg-cream/50 p-4">
+                <div className="flex items-center justify-between">
+                  <span className="font-display text-sm font-semibold text-ink">Racquet {i + 1}</span>
+                  {racquets.length > 1 && (
+                    <button
+                      type="button"
+                      onClick={() => removeRacquet(i)}
+                      className="text-xs text-stone transition-colors hover:text-red-600"
+                    >
+                      Remove
+                    </button>
+                  )}
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className={label}>Racquet name</label>
+                  <input
+                    className={field}
+                    value={r.name}
+                    onChange={(e) => updateRacquet(i, { name: e.target.value })}
+                    placeholder="e.g. Wilson Blade"
+                  />
+                </div>
+
+                <div className="grid gap-2 sm:grid-cols-3">
+                  {STRINGING_SERVICES.map((t) => (
+                    <label
+                      key={t}
+                      className={`flex cursor-pointer items-center rounded-lg border p-3 text-sm transition ${
+                        r.serviceType === t
+                          ? "border-court bg-court-tint text-ink"
+                          : "border-line bg-paper text-ink hover:border-court/40"
+                      }`}
+                    >
+                      <input
+                        type="radio"
+                        name={`service-${i}`}
+                        className="mr-2 accent-court"
+                        checked={r.serviceType === t}
+                        onChange={() => updateRacquet(i, { serviceType: t })}
+                      />
+                      <span>
+                        {SERVICES[t].label}{" "}
+                        <span className="text-stone">— {formatCents(SERVICES[t].laborCents)}</span>
+                      </span>
+                    </label>
+                  ))}
+                </div>
+
+                {r.serviceType === "full_service" && (
+                  <div className="space-y-1.5">
+                    <label className={label}>String</label>
+                    <select
+                      className={field}
+                      value={r.stringId}
+                      onChange={(e) => updateRacquet(i, { stringId: e.target.value })}
+                    >
+                      <option value="">Select a string…</option>
+                      {strings.map((s) => (
+                        <option key={s.id} value={s.id}>
+                          {strLabel(s)}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+
+                {r.serviceType === "hybrid" && (
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <div className="space-y-1.5">
+                      <label className={label}>Mains string</label>
+                      <select
+                        className={field}
+                        value={r.stringId}
+                        onChange={(e) => updateRacquet(i, { stringId: e.target.value })}
+                      >
+                        <option value="">Select…</option>
+                        {strings.map((s) => (
+                          <option key={s.id} value={s.id}>
+                            {strLabel(s)}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className={label}>Crosses string</label>
+                      <select
+                        className={field}
+                        value={r.crossesStringId}
+                        onChange={(e) => updateRacquet(i, { crossesStringId: e.target.value })}
+                      >
+                        <option value="">Select…</option>
+                        {strings.map((s) => (
+                          <option key={s.id} value={s.id}>
+                            {strLabel(s)}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <p className="text-xs text-stone sm:col-span-2">Each string is charged at half its price.</p>
+                  </div>
+                )}
+
+                <label className="flex cursor-pointer items-center gap-2 text-sm text-ink">
+                  <input
+                    type="checkbox"
+                    className="accent-court"
+                    checked={r.regrip}
+                    onChange={(e) => updateRacquet(i, { regrip: e.target.checked })}
+                  />
+                  Add a regrip (+{formatCents(REGRIP_ADDON_CENTS)} · your choice of overgrip)
+                </label>
+
+                <div className="text-right text-sm text-stone">
+                  Racquet total: <span className="font-medium text-ink">{formatCents(racquetLine(r))}</span>
+                </div>
+              </div>
             ))}
           </div>
 
-          {serviceType === "full_service" && (
-            <div className="mt-4 space-y-1.5">
-              <label className={label}>String</label>
-              <select className={field} value={stringId} onChange={(e) => setStringId(e.target.value)}>
-                <option value="">Select a string…</option>
-                {strings.map((s) => (
-                  <option key={s.id} value={s.id}>
-                    {strLabel(s)}
-                  </option>
-                ))}
-              </select>
-            </div>
-          )}
-
-          {serviceType === "hybrid" && (
-            <div className="mt-4 grid gap-4 sm:grid-cols-2">
-              <div className="space-y-1.5">
-                <label className={label}>Mains string</label>
-                <select className={field} value={stringId} onChange={(e) => setStringId(e.target.value)}>
-                  <option value="">Select…</option>
-                  {strings.map((s) => (
-                    <option key={s.id} value={s.id}>
-                      {strLabel(s)}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div className="space-y-1.5">
-                <label className={label}>Crosses string</label>
-                <select
-                  className={field}
-                  value={crossesStringId}
-                  onChange={(e) => setCrossesStringId(e.target.value)}
-                >
-                  <option value="">Select…</option>
-                  {strings.map((s) => (
-                    <option key={s.id} value={s.id}>
-                      {strLabel(s)}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <p className="text-xs text-stone sm:col-span-2">
-                Each string is charged at half its price for a hybrid.
-              </p>
-            </div>
-          )}
-
-          {serviceType === "regrip" && (
-            <div className="mt-4 space-y-1.5">
-              <label className={label}>Number of grips</label>
-              <input
-                className={`${field} max-w-32`}
-                type="number"
-                min={1}
-                value={gripQty}
-                onChange={(e) => setGripQty(Math.max(1, Number(e.target.value)))}
-              />
-            </div>
-          )}
+          <button
+            type="button"
+            onClick={addRacquet}
+            className="mt-3 inline-flex items-center gap-1 rounded-lg border border-dashed border-court/50 px-3 py-2 text-sm font-medium text-court transition-colors hover:bg-court-tint/50"
+          >
+            + Add another racquet
+          </button>
 
           <div className="mt-4 flex items-center justify-between rounded-lg border border-court/30 bg-court-tint/50 px-4 py-3">
             <div>
               <p className="text-sm font-medium text-ink">Estimated total</p>
-              <p className="text-xs text-stone">{estimateNote} · paid in person</p>
+              <p className="text-xs text-stone">
+                {racquets.length} racquet{racquets.length === 1 ? "" : "s"} · paid in person
+              </p>
             </div>
             <span className="font-display text-xl font-semibold text-ink">{formatCents(estimate)}</span>
           </div>
@@ -478,7 +548,7 @@ export default function BookingForm() {
             disabled={submitting}
             className="mt-5 rounded-lg bg-court px-5 py-2.5 font-medium text-white transition-colors hover:bg-court-deep disabled:cursor-not-allowed disabled:opacity-50"
           >
-            {submitting ? "Submitting…" : "Submit booking"}
+            {submitting ? "Submitting…" : `Submit booking · ${formatCents(estimate)}`}
           </button>
         </fieldset>
       )}

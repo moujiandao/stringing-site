@@ -1,7 +1,7 @@
 // =====================================================================
 // Pricing, labels, and batching knobs. Shared by UI + server + batcher.
 // =====================================================================
-import type { ServiceType, BookingStatus, DayPart, Weekday, BatchPhase } from "./types";
+import type { ServiceType, StringingService, BookingStatus, DayPart, Weekday, BatchPhase } from "./types";
 
 // --- Services ----------------------------------------------------------
 // Labor in cents. Full service adds the chosen string's price; regrip adds
@@ -67,6 +67,22 @@ export function quoteCents(
       Math.round((opts.crossesPriceCents ?? 0) / 2)
     );
   return labor; // byo_string, regrip
+}
+
+// The regrip add-on price (your choice of overgrip).
+export const REGRIP_ADDON_CENTS = SERVICES.regrip.laborCents;
+
+// One racquet's line total: stringing quote + optional regrip add-on.
+// Shared by the booking form (live estimate) and the API (saved quote).
+export function racquetQuoteCents(opts: {
+  serviceType: StringingService;
+  stringPriceCents?: number | null;
+  mainsPriceCents?: number | null;
+  crossesPriceCents?: number | null;
+  regrip?: boolean;
+}): number {
+  const base = quoteCents(opts.serviceType, opts);
+  return base + (opts.regrip ? REGRIP_ADDON_CENTS : 0);
 }
 
 // --- Availability labels ----------------------------------------------

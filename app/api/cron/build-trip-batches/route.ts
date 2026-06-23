@@ -75,15 +75,6 @@ async function handle(req: NextRequest) {
       availMap.set(r.booking_id, arr);
     }
 
-    // string names for the owner digest
-    const stringIds = [
-      ...new Set(bookings.flatMap((b) => [b.stringId, b.crossesStringId]).filter(Boolean)),
-    ] as string[];
-    const stringName = new Map<string, string>();
-    if (stringIds.length) {
-      const { data: sRows } = await supabase.from("string_catalog").select("id,name").in("id", stringIds);
-      for (const s of sRows ?? []) stringName.set(s.id, s.name);
-    }
 
     const inputs = bookings.map((b) => ({
       id: b.id,
@@ -170,14 +161,9 @@ async function handle(req: NextRequest) {
             customerName: b.customerName,
             racquetLabel: b.racquetLabel,
             serviceType: b.serviceType,
-            stringName:
-              b.serviceType === "hybrid"
-                ? `${(b.stringId && stringName.get(b.stringId)) ?? "?"} / ${
-                    (b.crossesStringId && stringName.get(b.crossesStringId)) ?? "?"
-                  }`
-                : b.stringId
-                  ? stringName.get(b.stringId) ?? null
-                  : null,
+            // Per-string detail lives in the admin booking page; the digest just
+            // notes how many racquets so the owner knows what to carry.
+            stringName: b.racquets.length > 1 ? `${b.racquets.length} racquets` : null,
             gripQty: b.gripQty,
             customerPhone: b.customerPhone,
             amountDueCents: phase === "pickup" ? b.priceQuoteCents : null,
