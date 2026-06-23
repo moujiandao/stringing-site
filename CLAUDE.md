@@ -19,16 +19,19 @@ Replaces a verbose competitor site by cutting marketing filler and adding real l
 - **No payments online**: contactless (cash/Venmo/Zelle) at the meetup.
 
 ### Module map
-- `lib/types.ts` — the domain contract (every shared shape). Single source of truth.
-- `lib/constants.ts` — pricing (`SERVICES`), labels, transition rules, batching knobs, `formatCents`.
+- `lib/types.ts` — the domain contract (every shared shape: `BookingRacquet`, `StringingService`, etc.). Single source of truth.
+- `lib/constants.ts` — pricing (`SERVICES`, `quoteCents`, `racquetQuoteCents`, `REGRIP_ADDON_CENTS`), `TENSIONS`, labels, transition rules, batching knobs, `formatCents`.
 - `lib/supabase/{server,admin,client}.ts` — session-RLS / service-role / anon-browser clients.
+- `lib/mappers.ts` — snake_case row → camelCase type mappers.
 - `lib/batching/` — pure trip-grouping engine (`group.ts` typed facade over `core.mjs`), unit-tested.
-- `lib/email/{send,templates}.ts` — Resend wrapper + per-EmailKind templates.
-- `components/site/{StickyTabs,Reveal,SiteHeader,SiteFooter}.tsx` — public-site chrome + scroll-reveal/scrollspy (CSS + IntersectionObserver; theme tokens in `app/globals.css`).
-- `app/` (public): `/` single-page home (hero/how-it-works, why, pricing, strings — scrollspy tabs), `/racquets` (racquets for sale), `/status/[token]`.
-- `app/admin/` (owner, gated by `proxy.ts` — Next 16's renamed middleware): login, dashboard, bookings/[id], inventory, hubs, batches.
-- `app/api/`: `bookings` (submit), `bookings/[token]` (status), `admin/bookings/[id]/transition`,
-  `admin/batches/[id]`, `cron/build-trip-batches`.
+- `lib/email/{send,dispatch,templates}.ts` — Resend wrapper + idempotent `sendWithDedup` + per-EmailKind templates.
+- `components/BookingForm.tsx` — the guided multi-step booking form (info → racquets → meetup → when).
+- `components/site/{StickyTabs,Reveal,SiteHeader,SiteFooter}.tsx` — public-site chrome + scroll-reveal/scrollspy (theme tokens in `app/globals.css`).
+- `components/admin/{ImageUpload,TransitionButtons,BatchActions,AdminNav}.tsx` — admin widgets.
+- `app/` (public): `/` single-page home (hero/how-it-works, why, pricing, strings — scrollspy tabs), `/racquets` (for sale), `/status/[token]`.
+- `app/admin/` (owner, gated by `proxy.ts` — Next 16's renamed middleware): login, dashboard, bookings/[id], inventory, hubs, batches, settings.
+- `app/api/`: `bookings` (submit + owner notify), `bookings/[token]` (status), `admin/bookings/[id]/transition`,
+  `admin/batches/[id]`, `admin/upload` (catalog images), `cron/build-trip-batches`.
 
 ## Key Conventions
 - DB columns are snake_case; app types are camelCase. Map at the query boundary.
@@ -52,6 +55,24 @@ Replaces a verbose competitor site by cutting marketing filler and adding real l
   cross-product as `(weekday, day_part)` rows. Grouping needs discrete comparable slots to set-cover.
   The `day_part` column/`DayPart` type holds the window id (e.g. `"1800"`); the batcher treats it as
   an opaque slot, so changing the window set needs no schema or algorithm change.
+- **Multi-racquet bookings**: a booking holds a `racquets` jsonb array (`BookingRacquet[]`), each a
+  **snapshot** of name + service + string names/prices + tension + regrip + line price. The booking
+  is the unit for hub/availability/status/batching; only its contents are a list. Snapshotting means
+  displays need no joins and stay accurate if a string is later archived. Legacy single-racquet
+  columns are kept only to satisfy NOT NULL / list views (`service_type` = first racquet, `racquet_label`
+  = joined names). `price_quote_cents` = sum of line prices.
+- **Shared pricing** (`quoteCents` / `racquetQuoteCents` in `lib/constants.ts`): the booking form's
+  live estimate and the API's saved quote call the *same* function, so they can't drift. Hybrid =
+  labor + half of each string; **regrip is a per-racquet add-on** (+$3), not a service. Per-racquet
+  tension is `mains/crossesTension` (null = "go with recommended").
+- **Admin-editable config** in a `settings(key,value)` table (e.g. `owner_email`); the booking route
+  reads `settings.owner_email` and falls back to the `OWNER_EMAIL` env. Edited at `/admin/settings`.
+- **Catalog images** upload to the public `catalog` Storage bucket via `/api/admin/upload` (owner-authed),
+  resized to a uniform 600×600 square with `sharp`; the route writes **raw bytes via the Storage REST
+  endpoint** because the JS storage client UTF-8-mangled the JPEG buffer. Drag-from-another-browser
+  is supported (server fetches the dragged URL, extracts og:image if it's a page).
+- **Email delivery caveat**: Resend is still on the sandbox sender (`onboarding@resend.dev`), which only
+  delivers to the Resend account address — verify a domain + set `RESEND_FROM_EMAIL` to send to anyone.
 - **Greedy max-coverage set-cover** for trip grouping: near-minimal trips, trivial to reason about;
   exact set-cover is NP-hard and overkill at hobby scale.
 - **Straggler knobs** (`MIN_BATCH_SIZE`, `STRAGGLER_MAX_DAYS`): the lever balancing "minimize trips"

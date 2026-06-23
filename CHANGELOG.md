@@ -1,5 +1,30 @@
 # Changelog
 
+## [2026-06-23]
+
+### Added
+- Add **hybrid stringing** (mains + crosses strings, each charged at half price) as a booking option.
+- Add **multi-racquet bookings**: a booking holds a `racquets` jsonb array (snapshot of name, service, string names/prices, tension, regrip, line price); `price_quote_cents` = sum.
+- Add per-racquet **tension** selection (40–65 lbs, default "go with recommended"; separate mains/crosses for hybrid).
+- Add a **live estimated total** in the booking flow via shared `quoteCents` / `racquetQuoteCents` (form estimate == saved quote).
+- Add an admin-editable **`settings`** table + `/admin/settings` page; the new-booking notification email is now configurable (falls back to `OWNER_EMAIL`).
+- Add **owner new-booking notification email**; add **catalog image upload** (drag/click, incl. cross-browser URL drag) via `/api/admin/upload` to a public `catalog` Storage bucket, `sharp`-resized to a uniform square; add `photo_url` to `string_catalog`.
+
+### Changed
+- Booking form is now a **guided multi-step flow** (info → racquets → meetup → when) with slide-in reveals.
+- **Regrip** is now a per-racquet **add-on** (+$3), not a standalone service; removed from the service options.
+- Default booking service is **Stringing + Pick your String**; pricing cards are clickable (preselect the service).
+- Swap display font to **Plus Jakarta Sans**; add blurred photo backdrops (hero + strings); "How it works" → 3 steps; strings grid → 4 columns.
+- Replace coarse availability with **days × 1.5-hour windows** (12–8pm) chip selector.
+
+### Schema migrations (run in Supabase SQL Editor)
+- `bookings`: add `racquets jsonb default '[]'`, `crosses_string_id uuid`.
+- `string_catalog`: add `photo_url text`.
+- Add `settings(key text primary key, value text, updated_at timestamptz)` with admin RLS.
+
+### Notes
+- Email is still on Resend's sandbox sender — only delivers to the Resend account address until a domain is verified.
+
 ## [2026-06-21]
 
 ### Added
